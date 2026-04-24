@@ -57,6 +57,7 @@ export default defineCliConfig({
   },
   studioHost,
   deployment: {
+    appId: "c59vmw59cpfttg4l2i3gz4ji",
     autoUpdates: false,
   },
   schemaExtraction: {
