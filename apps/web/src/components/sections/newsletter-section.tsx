@@ -1,3 +1,11 @@
+// ============================================================================
+// NEWSLETTER SECTION — `newsletterBlock` in Sanity
+// ============================================================================
+// Bottom-of-page "Subscribe to the Jamb Journal" row.
+// Two-column: heading + body + CTA on one side, portrait image on the other.
+// Currently the CTA is a plain <span> — no form submit because email capture
+// would need a backend/service and is out of frontend-assessment scope.
+// ============================================================================
 "use client";
 
 import type { PagebuilderType } from "@/types";
@@ -39,7 +47,7 @@ export function NewsletterSection({
         {image && (
           <div className="relative mx-auto aspect-[3/4] w-full max-w-[520px] overflow-hidden">
             <SanityImage
-              className="h-full w-full rounded-none object-cover"
+              className="absolute inset-0 h-full w-full rounded-none object-cover"
               height={900}
               image={image}
               width={720}

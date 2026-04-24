@@ -1,3 +1,7 @@
+// Split block schema — two-column row: image + heading/body/CTAs.
+// Matches sections/split-section.tsx via `_type === "splitBlock"`.
+// `layout` ("left" | "right") drives the side the image renders on.
+
 import { SplitVerticalIcon } from "@sanity/icons";
 import { defineArrayMember, defineField, defineType } from "sanity";
 

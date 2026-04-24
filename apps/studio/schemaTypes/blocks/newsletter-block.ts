@@ -1,3 +1,7 @@
+// Newsletter block schema — heading + body + CTA button + image.
+// CTA is presentational only (no form submit on the frontend).
+// Matches sections/newsletter-section.tsx via `_type === "newsletterBlock"`.
+
 import { EnvelopeIcon } from "@sanity/icons";
 import { defineField, defineType } from "sanity";
 

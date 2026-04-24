@@ -1,3 +1,12 @@
+// ============================================================================
+// SPLIT SECTION — `splitBlock` in Sanity
+// ============================================================================
+// Two-column layout: image on one side, title + body + CTAs on the other.
+// Used for Fireplaces / Lighting / Furniture intro rows.
+// - `layout` field ("left" | "right") swaps sides on desktop via `order` classes
+// - CTAs are a resolved array; each has { label, href, _key, openInNewTab }
+// - Image gets a fixed 583/734 aspect ratio → matches the Figma comp exactly
+// ============================================================================
 "use client";
 
 import Link from "next/link";
@@ -15,6 +24,7 @@ export function SplitSection({
   anchorId,
   ctas,
 }: SplitSectionProps) {
+  // Drives order-1/order-2 so the image can be flipped without reordering JSX.
   const isImageLeft = layout === "left";
 
   return (
@@ -25,9 +35,9 @@ export function SplitSection({
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
         <div className={isImageLeft ? "order-1" : "order-1 lg:order-2"}>
           {image && (
-            <div className="mx-auto aspect-[583/734] w-full max-w-[583px] overflow-hidden">
+            <div className="relative mx-auto aspect-[583/734] w-full max-w-[583px] overflow-hidden">
               <SanityImage
-                className="h-full w-full rounded-none object-cover"
+                className="absolute inset-0 h-full w-full rounded-none object-cover"
                 height={734}
                 image={image}
                 width={583}

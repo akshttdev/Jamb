@@ -1,3 +1,7 @@
+// Editorial block schema — eyebrow + heading + body + image + CTA.
+// Used for the "Journal — The Grand Collection" feature row.
+// Matches sections/editorial-section.tsx via `_type === "editorialBlock"`.
+
 import { DocumentTextIcon } from "@sanity/icons";
 import { defineField, defineType } from "sanity";
 

@@ -1,17 +1,25 @@
+// ============================================================================
+// SANITY LIVE — reactive fetch + auto-revalidation
+// ============================================================================
+// `defineLive` wraps the standard client and returns:
+//   - sanityFetch({ query })  → server-side data fetch (used in page.tsx)
+//   - <SanityLive />          → client runtime that listens to mutations
+//                               and revalidates matching queries automatically
+//
+// The two tokens:
+//   - serverToken  → used by sanityFetch on the server for authenticated
+//                    fetches (needed to pull drafts when draftMode is on).
+//   - browserToken → sent to the browser ONLY inside a valid Next.js Draft
+//                    Mode session, so drafts never leak to anonymous visitors.
+// ============================================================================
+
 import { env } from "@workspace/env/server";
 import { defineLive } from "next-sanity/live";
 
 import { client } from "./client";
 
-/**
- * Use defineLive to enable automatic revalidation and refreshing of your fetched content
- * Learn more: https://github.com/sanity-io/next-sanity?tab=readme-ov-file#1-configure-definelive
- */
-
 export const { sanityFetch, SanityLive } = defineLive({
   client,
-  // Required for showing draft content when the Sanity Presentation Tool is used, or to enable the Vercel Toolbar Edit Mode
   serverToken: env.SANITY_API_READ_TOKEN,
-  // Required for stand-alone live previews, the token is only shared to the browser if it's a valid Next.js Draft Mode session
   browserToken: env.SANITY_API_READ_TOKEN,
 });

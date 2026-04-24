@@ -109,10 +109,12 @@
   }
 }
 
-img {
-  display: block;
-  max-width: 100%;
-  height: auto;
+@layer base {
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
 }
 
 html {

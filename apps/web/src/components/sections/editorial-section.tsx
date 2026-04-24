@@ -1,3 +1,12 @@
+// ============================================================================
+// EDITORIAL SECTION — `editorialBlock` in Sanity
+// ============================================================================
+// Used for the "Journal — The Grand Collection" feature row.
+// Two-column: text + image. Similar shape to Split but with:
+//   - an optional uppercase `eyebrow` above the heading (e.g. "JOURNAL")
+//   - a coloured background (`bg-[#DFDAD7]` to match the design)
+//   - aspect-[4/5] image (portrait, not the 583/734 used by Split)
+// ============================================================================
 "use client";
 
 import Link from "next/link";
@@ -61,9 +70,9 @@ export function EditorialSection({
         </div>
 
         {image && (
-          <div className="aspect-[4/5] overflow-hidden">
+          <div className="relative aspect-[4/5] overflow-hidden">
             <SanityImage
-              className="h-full w-full rounded-none object-cover"
+              className="absolute inset-0 h-full w-full rounded-none object-cover"
               height={1000}
               image={image}
               width={800}

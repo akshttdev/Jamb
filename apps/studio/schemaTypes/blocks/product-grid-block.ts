@@ -1,3 +1,15 @@
+// ============================================================================
+// PRODUCT GRID BLOCK — Sanity schema
+// ============================================================================
+// Defines the fields authors see when editing a `productGridBlock` in studio.
+// The `_type` string ("productGridBlock") is the contract that links this
+// schema to the React component (sections/product-grid-section.tsx) via the
+// BLOCK_COMPONENTS map in pagebuilder.tsx.
+//
+// Every field below has a human-written `description` — those show up as
+// help text in the Studio UI, so non-technical authors know what to do.
+// ============================================================================
+
 import { ThLargeIcon } from "@sanity/icons";
 import { defineArrayMember, defineField, defineType } from "sanity";
 

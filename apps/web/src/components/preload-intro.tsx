@@ -1,3 +1,25 @@
+// ============================================================================
+// PRELOAD INTRO — FLIP animation on first tab visit
+// ============================================================================
+// On first visit in a tab:
+//   1. Covers the screen with the hero image (full viewport)
+//   2. Waits for every above-the-fold resource to finish loading
+//      (window.load + document.fonts.ready) BEFORE measuring the hero.
+//      This is the key to eliminating jitter — without it the hero's final
+//      position is a moving target as images/fonts paint in.
+//   3. Measures the real hero's bounding rect (retries if hero not yet sized).
+//   4. Holds for `hold` ms, then shrinks to the measured rect over `duration` s.
+//   5. Once the animation completes, sets sessionStorage flag + unmounts.
+//
+// The `sessionStorage` key "jamb:intro-played" gates this to once-per-tab.
+// A pre-hydration script in layout.tsx reads the same key to add .intro-skip
+// on <html> before React mounts, so the overlay never flashes on reload.
+//
+// Why FLIP with layout props (top/left/width/height) instead of transforms:
+// transforms leave layout alone → the animated element's final box position
+// can be sub-pixel off from the real hero. Layout-property animation forces
+// the overlay to occupy the hero's exact pixel region at the end.
+// ============================================================================
 "use client";
 
 import { motion } from "motion/react";
@@ -65,32 +87,61 @@ export function PreloadIntro({
 
     prefetchImages(PREFETCH_ASSETS);
 
+    // Skip on repeat visits in this tab.
     if (sessionStorage.getItem("jamb:intro-played")) {
       setDone(true);
       return;
     }
 
+    // Lock scroll while intro runs. Capture initial viewport once so a
+    // mid-animation resize (e.g. mobile address-bar collapse) doesn't jerk
+    // the overlay.
     document.body.style.overflow = "hidden";
     setViewport({ vw: window.innerWidth, vh: window.innerHeight });
 
-    const measureHero = () => {
+    let cancelled = false;
+
+    // Measure with retry: if hero isn't painted/sized yet, try next frame.
+    // Guards against the rare case where layout updates land after load.
+    const measure = () => {
+      if (cancelled) {
+        return;
+      }
       const heroInner = document.querySelector<HTMLElement>("#hero > div");
       if (!heroInner) {
+        requestAnimationFrame(measure);
         return;
       }
       const r = heroInner.getBoundingClientRect();
-      setRect({
-        top: r.top,
-        left: r.left,
-        width: r.width,
-        height: r.height,
+      // Height < 50px = hero not fully laid out (image hasn't forced aspect).
+      if (r.height < 50) {
+        requestAnimationFrame(measure);
+        return;
+      }
+      setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+    };
+
+    // Wait for ALL resources loaded before measuring. This is what kills
+    // the jitter — by `load` time, every image above the fold has painted
+    // and the hero's final position is stable.
+    const kickoff = () => {
+      const fontsReady = document.fonts?.ready ?? Promise.resolve();
+      fontsReady.then(() => {
+        // Double rAF: first frame applies any final layout from fonts, second
+        // frame is when we can safely measure.
+        requestAnimationFrame(() => requestAnimationFrame(measure));
       });
     };
 
-    const raf = requestAnimationFrame(measureHero);
+    if (document.readyState === "complete") {
+      kickoff();
+    } else {
+      window.addEventListener("load", kickoff, { once: true });
+    }
 
     return () => {
-      cancelAnimationFrame(raf);
+      cancelled = true;
+      window.removeEventListener("load", kickoff);
     };
   }, []);
 

@@ -1,3 +1,6 @@
+// Hero block schema — full-bleed image + optional anchor-link row beneath it.
+// Matches sections/hero-section.tsx via `_type === "heroBlock"`.
+
 import { ImageIcon } from "@sanity/icons";
 import { defineArrayMember, defineField, defineType } from "sanity";
 

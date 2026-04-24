@@ -1,5 +1,26 @@
+// ============================================================================
+// GROQ QUERIES — contract between Sanity and the frontend
+// ============================================================================
+// GROQ is Sanity's query language (like SQL for JSON).
+//
+// Strategy:
+//   1. Shared *fragments* are composed into bigger queries. Each block has
+//      its own fragment so a schema change only requires editing one place.
+//   2. The final `queryHomePageData` fetches the homePage singleton, spreads
+//      every top-level field (`...`), then resolves the `pageBuilder` array
+//      by running a `select()` that matches each block's `_type` to its fragment.
+//   3. Every query is wrapped in `defineQuery` so the TypeScript codegen
+//      (apps/studio: `pnpm type`) generates a typed return shape automatically.
+//
+// Why the `/* groq */` comment? It's a marker for the @sanity/groq tooling
+// to syntax-highlight / lint these template literals.
+// ============================================================================
+
 import { defineQuery } from "next-sanity";
 
+// Standard image projection — used everywhere an image field appears.
+// Resolves the asset _ref, picks up the LQIP (low-quality image placeholder)
+// for blur-up loading, and derives a sensible alt text fallback chain.
 const imageFields = /* groq */ `
   "id": asset._ref,
   "preview": asset->metadata.lqip,
@@ -43,6 +64,10 @@ const buttonsFragment = /* groq */ `
   }
 `;
 
+// CTA URL resolver. The `customUrl` type in Sanity stores either an internal
+// reference, an external link, or a raw href string. This fragment flattens
+// that discriminated union into a single `href` on the frontend — the React
+// components never have to know which variant was picked in the studio.
 const ctaUrlFragment = /* groq */ `
   "openInNewTab": url.openInNewTab,
   "href": select(
@@ -77,6 +102,8 @@ const splitBlockFragment = /* groq */ `
   }
 `;
 
+// `array::compact` filters null entries from the products array — defensive in
+// case an author deletes an image and the underlying asset ref is gone.
 const productGridBlockFragment = /* groq */ `
   _type == "productGridBlock" => {
     ...,
@@ -108,6 +135,10 @@ const newsletterBlockFragment = /* groq */ `
   }
 `;
 
+// The master page builder fragment. For each block in the array, we spread
+// every top-level field (`...`), then apply the block-specific fragment via
+// the `_type == "..." => { ... }` syntax. Only the matching fragment runs
+// for each block — the others are skipped, so there's no wasted work.
 const pageBuilderFragment = /* groq */ `
   pageBuilder[]{
     ...,

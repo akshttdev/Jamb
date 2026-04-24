@@ -354,7 +354,7 @@ export function DemoHomepage() {
   return (
     <main>
       <section className="w-full px-[38px]" id="hero">
-        <div className="relative aspect-[4/5] w-full overflow-hidden sm:aspect-[1436/768]">
+        <div className="relative aspect-square w-full overflow-hidden sm:aspect-[1436/768]">
           <Image
             alt="Jamb hero"
             className="object-cover"

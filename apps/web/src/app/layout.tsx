@@ -1,3 +1,11 @@
+// ============================================================================
+// ROOT LAYOUT — wraps every page in the Next.js App Router
+// ============================================================================
+// Loads global styles, fonts, navbar, footer, Sanity live-preview runtime.
+// This is a Server Component (note the `async`) so we can fetch navigation
+// data on the server before hydration.
+// ============================================================================
+
 import "@workspace/ui/globals.css";
 import "lenis/dist/lenis.css";
 
@@ -16,12 +24,17 @@ import { PreviewBar } from "@/components/preview-bar";
 import { Providers } from "@/components/providers";
 import { getNavigationData } from "@/lib/navigation";
 
+// Google-hosted Inter — used for the footer search input (condensed sans).
+// `variable` exposes a CSS var so Tailwind can reference it as font-[family-name:var(--font-inter)].
 const fontInter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
+// Local Copernicus family — 4 weights. This is the brand body/display font.
+// Supplied as public/fonts/*.woff & .ttf because the Figma font is paid and
+// not available on Google Fonts (see README — "figma font workaround").
 const fontJamb = localFont({
   src: [
     {
@@ -50,6 +63,8 @@ const fontJamb = localFont({
   preload: true,
 });
 
+// Narrow condensed font — used only for the footer search placeholder.
+// Loaded separately so we don't bloat the critical font payload.
 const fontPolarisCondensed = localFont({
   src: [
     {
@@ -62,6 +77,9 @@ const fontPolarisCondensed = localFont({
   display: "swap",
 });
 
+// Assets warmed on first request. react-dom's preload() injects
+// <link rel="preload" as="image"> tags into <head> so the browser
+// fetches them in parallel with the HTML — big win for LCP.
 const HERO_ASSETS = [
   "/images/hero.png",
   "/images/fireplace.png",
@@ -87,17 +105,30 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Open a TCP+TLS handshake to Sanity CDN before we need it. Shaves ~100ms
+  // off the first image fetch.
   preconnect("https://cdn.sanity.io");
   prefetchDNS("https://cdn.sanity.io");
+
+  // Queue every critical image for parallel download during HTML streaming.
   for (const href of HERO_ASSETS) {
     preload(href, { as: "image", fetchPriority: "high" });
   }
+
+  // Navbar is CMS-editable — fetched server-side so it renders with HTML.
   const nav = await getNavigationData();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${fontJamb.variable} ${fontInter.variable} ${fontPolarisCondensed.variable} font-jamb antialiased`}
       >
+        {/*
+         * Pre-hydration script. Runs before React mounts.
+         * Checks sessionStorage: if the preload intro already played in this
+         * tab, adds .intro-skip to <html> so CSS can hide the overlay BEFORE
+         * first paint — prevents the "flash of intro" on reload.
+         */}
         <script
           dangerouslySetInnerHTML={{
             __html:
@@ -107,11 +138,14 @@ export default async function RootLayout({
         <Providers>
           <Navbar navbarData={nav.navbarData} settingsData={nav.settingsData} />
           {children}
+          {/* Footer streams in via Suspense so the rest of the page isn't blocked. */}
           <Suspense fallback={<FooterSkeleton />}>
             <FooterServer />
           </Suspense>
+          {/* SanityLive subscribes to content mutations; used by Presentation tool for live preview. */}
           <SanityLive />
           <CombinedJsonLd includeOrganization includeWebsite />
+          {/* Draft mode = Sanity preview. Shows edit toolbar + preview banner. */}
           {(await draftMode()).isEnabled && (
             <>
               <PreviewBar />

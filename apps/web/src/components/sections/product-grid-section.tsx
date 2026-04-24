@@ -1,3 +1,19 @@
+// ============================================================================
+// PRODUCT GRID — `productGridBlock` in Sanity
+// ============================================================================
+// One block serves four different sections on the homepage:
+//   - Our latest chimneypieces (dark bg, landscape images)
+//   - Our latest lighting      (dark bg, tall images, scaled down)
+//   - Our latest furniture     (no bg, mixed aspect images)
+//   - See more of our latest stories (no bg, portrait images)
+//
+// Schema-driven variables (all from Sanity):
+//   - aspectRatio → square / portrait / tall / extra-tall / landscape / wide
+//   - columns     → 3 | 4 | 5
+//   - imageBackground → none | dark | light (box behind each image)
+//   - sectionBackground → default | muted (#E3E3E3 full-width panel)
+//   - imageScale  → 0.3–1.0, shrinks image box within its column for whitespace
+// ============================================================================
 "use client";
 
 import Link from "next/link";
@@ -8,6 +24,9 @@ import { MotionWrapper } from "../ui/motion-wrapper";
 
 type ProductGridSectionProps = PagebuilderType<"productGridBlock">;
 
+// Maps aspect-ratio schema values to Tailwind aspect classes.
+// Kept as a lookup table so the schema values are the contract — changing
+// one without updating the other breaks TypeScript.
 const ASPECT_RATIO_CLASS: Record<
   NonNullable<ProductGridSectionProps["aspectRatio"]>,
   string
@@ -20,12 +39,17 @@ const ASPECT_RATIO_CLASS: Record<
   wide: "aspect-video",
 };
 
+// Column counts. Mobile = 2, tablet = 3, desktop depends on the block's `columns` value.
+// NOTE: these strings are enumerated (not interpolated) because Tailwind's JIT
+// won't generate classes for dynamically built strings like `lg:grid-cols-${n}`.
 const COLUMN_CLASS: Record<3 | 4 | 5, string> = {
   3: "grid-cols-2 md:grid-cols-3",
   4: "grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
   5: "grid-cols-2 md:grid-cols-3 lg:grid-cols-5",
 };
 
+// Backdrop behind each image. "dark" is used for chimneypieces/lighting
+// because the product photos have dark/transparent backgrounds.
 const IMAGE_BACKGROUND_CLASS: Record<
   NonNullable<ProductGridSectionProps["imageBackground"]>,
   string
@@ -49,11 +73,16 @@ export function ProductGridSection({
     return null;
   }
 
+  // Resolve schema values → Tailwind classes via the lookup tables above.
   const aspectClass = ASPECT_RATIO_CLASS[aspectRatio];
   const columnClass = COLUMN_CLASS[columns];
   const backgroundClass = IMAGE_BACKGROUND_CLASS[imageBackground];
   const sectionBgClass =
     sectionBackground === "muted" ? "bg-surface-muted" : "";
+
+  // imageScale is stored as a string in Sanity (e.g. "0.75") so it can be a
+  // dropdown with named percentages. Parse to number → CSS width percentage.
+  // Only applied when <1 to avoid layout thrash from an identity style.
   const scale = imageScale ? Number(imageScale) : 1;
   const scaleStyle = scale < 1 ? { width: `${scale * 100}%` } : undefined;
 

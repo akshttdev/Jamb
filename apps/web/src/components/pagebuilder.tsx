@@ -1,3 +1,16 @@
+// ============================================================================
+// PAGE BUILDER — the core of the CMS-driven homepage
+// ============================================================================
+// Receives an array of blocks (already shaped by GROQ) and renders each one
+// by looking up its `_type` in BLOCK_COMPONENTS. This is the only place that
+// knows how to map a block type string to a React component.
+//
+// Also handles two Presentation-tool concerns:
+//   1. useOptimistic → shows unsaved edits from the studio in real time
+//   2. data-sanity attributes → makes each block click-to-edit in Presentation
+//
+// Client component because useOptimistic requires a client runtime.
+// ============================================================================
 "use client";
 
 import { useOptimistic } from "@sanity/visual-editing/react";
@@ -14,8 +27,8 @@ import { SplitSection } from "./sections/split-section";
 
 export type PageBuilderProps = {
   readonly pageBuilder?: PageBuilderBlock[];
-  readonly id: string;
-  readonly type: string;
+  readonly id: string; // Sanity document _id
+  readonly type: string; // Sanity document _type (e.g. "homePage")
 };
 
 type SanityDataAttributeConfig = {
@@ -24,7 +37,9 @@ type SanityDataAttributeConfig = {
   readonly path: string;
 };
 
-// Strongly typed component mapping with proper component signatures
+// The dispatch table — the single source of truth mapping Sanity _type → React component.
+// Add a new block? Register it here. The `satisfies Record<...>` constraint makes
+// TypeScript yell if you add a block to the schema without also adding a component.
 const BLOCK_COMPONENTS = {
   heroBlock: HeroSection,
   splitBlock: SplitSection,
@@ -35,7 +50,9 @@ const BLOCK_COMPONENTS = {
 } as const satisfies Record<PageBuilderBlockTypes, React.ComponentType<any>>;
 
 /**
- * Helper function to create consistent Sanity data attributes
+ * Builds the serialized `data-sanity` attribute that Presentation reads to
+ * know which field in which document to open when the user clicks a block.
+ * Format: projectId=...;dataset=...;documentId=...;path=pageBuilder[_key=="..."]
  */
 function createSanityDataAttribute(config: SanityDataAttributeConfig): string {
   return createDataAttribute({
@@ -49,7 +66,9 @@ function createSanityDataAttribute(config: SanityDataAttributeConfig): string {
 }
 
 /**
- * Error fallback component for unknown block types
+ * Rendered when Sanity returns a block _type that has no matching React component.
+ * Happens if the schema was updated but the component wasn't registered, or in
+ * preview mode while a new block is being prototyped.
  */
 function UnknownBlockError({
   blockType,
@@ -76,7 +95,9 @@ function UnknownBlockError({
 }
 
 /**
- * Hook to handle optimistic updates for page builder blocks
+ * Wraps useOptimistic so the page re-renders instantly with draft content
+ * while the author edits in the studio (Presentation Tool). Without this,
+ * edits only show after the next sanityFetch round-trip.
  */
 function useOptimisticPageBuilder(
   initialBlocks: PageBuilderBlock[],
@@ -86,6 +107,7 @@ function useOptimisticPageBuilder(
   return useOptimistic<PageBuilderBlock[], any>(
     initialBlocks,
     (currentBlocks, action) => {
+      // Only react to updates for *this* document. Other docs' edits are ignored.
       if (action.id === documentId && action.document?.pageBuilder) {
         return action.document.pageBuilder;
       }
@@ -95,7 +117,9 @@ function useOptimisticPageBuilder(
 }
 
 /**
- * Custom hook for block component rendering logic
+ * Builds the render function for a single block. Extracted to a hook so the
+ * `createBlockDataAttribute` closure is memoized across the map() iteration
+ * — keeps React from re-rendering blocks when unrelated props change.
  */
 function useBlockRenderer(id: string, type: string) {
   const createBlockDataAttribute = useCallback(
@@ -103,6 +127,8 @@ function useBlockRenderer(id: string, type: string) {
       createSanityDataAttribute({
         id,
         type,
+        // GROQ path expression: "the element of pageBuilder whose _key matches".
+        // Presentation uses this to open the correct sub-editor.
         path: `pageBuilder[_key=="${blockKey}"]`,
       }),
     [id, type]
@@ -110,6 +136,7 @@ function useBlockRenderer(id: string, type: string) {
 
   const renderBlock = useCallback(
     (block: PageBuilderBlock, _index: number) => {
+      // Look up the component for this block's _type. If unregistered → error UI.
       const Component =
         BLOCK_COMPONENTS[block._type as keyof typeof BLOCK_COMPONENTS];
 
@@ -124,6 +151,8 @@ function useBlockRenderer(id: string, type: string) {
       }
 
       return (
+        // Wrapper carries the data-sanity attribute → click anywhere in the
+        // block (in Presentation) to jump to the editor for that block.
         <div
           data-sanity={createBlockDataAttribute(block._key)}
           key={`${block._type}-${block._key}`}
@@ -140,7 +169,7 @@ function useBlockRenderer(id: string, type: string) {
 }
 
 /**
- * PageBuilder component for rendering dynamic content blocks from Sanity CMS
+ * PageBuilder — iterates the blocks array and dispatches each to its matching component.
  */
 export function PageBuilder({
   pageBuilder: initialBlocks = [],
@@ -150,6 +179,8 @@ export function PageBuilder({
   const blocks = useOptimisticPageBuilder(initialBlocks, id);
   const { renderBlock } = useBlockRenderer(id, type);
 
+  // data-sanity on the <main> so Presentation can target the whole array
+  // (used to reorder/add/delete blocks from the frontend click menu).
   const containerDataAttribute = useMemo(
     () => createSanityDataAttribute({ id, type, path: "pageBuilder" }),
     [id, type]
