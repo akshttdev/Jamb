@@ -88,7 +88,7 @@ export function ProductGridSection({
 
   return (
     <section
-      className={`w-full px-4 pt-[30px] pb-[44px] sm:px-6 md:px-10 md:pb-[60px] lg:px-12 ${sectionBgClass}`}
+      className={`w-full px-4 pt-[50px] pb-[44px] sm:px-6 md:px-10 md:pb-[60px] lg:px-12 ${sectionBgClass}`}
       id={anchorId ?? undefined}
     >
       <div className="mx-auto max-w-[1400px]">

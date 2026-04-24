@@ -39,6 +39,7 @@ const NAVBAR_ICONS = [
   },
 ];
 
+
 export function Navbar({
   navbarData: initialNavbarData,
   settingsData: initialSettingsData,
