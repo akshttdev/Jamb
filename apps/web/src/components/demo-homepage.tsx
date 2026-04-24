@@ -291,7 +291,7 @@ function Editorial() {
       id="journal"
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <div className="mx-auto flex max-w-[520px] flex-col justify-center gap-6">
+        <div className="mx-auto flex max-w-[520px] flex-col justify-center gap-6 lg:-ml-5 lg:mx-0">
           <p className="text-center text-[16px] uppercase font-medium text-foreground">
             JOURNAL
           </p>
@@ -324,7 +324,7 @@ function Newsletter() {
   return (
     <section className="px-6 py-10 md:px-12 md:py-14 lg:py-16" id="newsletter">
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <div className="mx-auto flex max-w-[520px] flex-col gap-5">
+        <div className="mx-auto flex max-w-[520px] flex-col gap-5 lg:-ml-5 lg:mx-0">
           <h2 className="mx-auto max-w-[340px] text-balance text-center text-[28px] font-medium leading-tight tracking-tight text-black md:text-[34px]">
             Subscribe to the Jamb Journal
           </h2>

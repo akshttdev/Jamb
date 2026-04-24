@@ -87,22 +87,16 @@ export function PreloadIntro({
 
     prefetchImages(PREFETCH_ASSETS);
 
-    // Skip on repeat visits in this tab.
     if (sessionStorage.getItem("jamb:intro-played")) {
       setDone(true);
       return;
     }
 
-    // Lock scroll while intro runs. Capture initial viewport once so a
-    // mid-animation resize (e.g. mobile address-bar collapse) doesn't jerk
-    // the overlay.
     document.body.style.overflow = "hidden";
     setViewport({ vw: window.innerWidth, vh: window.innerHeight });
 
     let cancelled = false;
 
-    // Measure with retry: if hero isn't painted/sized yet, try next frame.
-    // Guards against the rare case where layout updates land after load.
     const measure = () => {
       if (cancelled) {
         return;
@@ -113,7 +107,6 @@ export function PreloadIntro({
         return;
       }
       const r = heroInner.getBoundingClientRect();
-      // Height < 50px = hero not fully laid out (image hasn't forced aspect).
       if (r.height < 50) {
         requestAnimationFrame(measure);
         return;
@@ -121,14 +114,9 @@ export function PreloadIntro({
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
 
-    // Wait for ALL resources loaded before measuring. This is what kills
-    // the jitter — by `load` time, every image above the fold has painted
-    // and the hero's final position is stable.
     const kickoff = () => {
       const fontsReady = document.fonts?.ready ?? Promise.resolve();
       fontsReady.then(() => {
-        // Double rAF: first frame applies any final layout from fonts, second
-        // frame is when we can safely measure.
         requestAnimationFrame(() => requestAnimationFrame(measure));
       });
     };

@@ -32,8 +32,8 @@ export function EditorialSection({
       id={anchorId ?? undefined}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <div>
-          <div className="mx-auto flex max-w-[520px] flex-col justify-center gap-5">
+        <div className="lg:pr-16 xl:pr-24">
+          <div className="mx-auto flex max-w-[520px] flex-col justify-center gap-5 lg:-ml-5 lg:mx-0">
             {eyebrow && (
               <p className="text-center text-[0.7rem] uppercase tracking-[0.22em] text-foreground/60">
                 {eyebrow}
