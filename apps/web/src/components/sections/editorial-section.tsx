@@ -19,24 +19,24 @@ export function EditorialSection({
 }: EditorialSectionProps) {
   return (
     <section
-      className="bg-[#DFDAD7] px-6 pt-0 pb-16 md:px-12 md:pt-[17px] md:pb-24 lg:pt-[33px] lg:pb-28"
+      className="bg-[#DFDAD7] px-6 pt-16 pb-16 md:px-12 md:pt-[33px] md:pb-24 lg:pt-[33px] lg:pb-28"
       id={anchorId ?? undefined}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
         <div>
-          <div className="flex flex-col justify-center gap-5">
+          <div className="mx-auto flex max-w-[520px] flex-col justify-center gap-5">
             {eyebrow && (
               <p className="text-center text-[0.7rem] uppercase tracking-[0.22em] text-foreground/60">
                 {eyebrow}
               </p>
             )}
             {title && (
-              <h2 className="text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
+              <h2 className="text-balance text-center text-[28px] font-medium leading-tight tracking-tight text-black md:text-[34px]">
                 {title}
               </h2>
             )}
             {description && (
-              <p className="mx-auto max-w-[450px] text-left text-base font-medium tracking-normal leading-[25px] text-black">
+              <p className="text-left text-base font-medium tracking-normal leading-[25px] text-black">
                 {description}
               </p>
             )}

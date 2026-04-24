@@ -118,11 +118,11 @@ type SplitProps = {
 
 function Split({ id, title, description, imgSrc, imgAlt, ctas }: SplitProps) {
   return (
-    <section className="px-6 py-16 md:px-12 md:py-24 lg:py-28" id={id}>
+    <section className="px-6 py-10 md:px-12 md:py-14 lg:py-16" id={id}>
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
         <div className="order-2 lg:order-1 lg:pl-0 lg:pr-16 xl:pr-24">
           <div className="mx-auto flex max-w-[520px] flex-col gap-5 lg:-ml-5 lg:mx-0">
-            <h2 className="text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
+            <h2 className="text-balance text-center text-[28px] font-medium leading-tight tracking-tight text-black md:text-[34px]">
               {title}
             </h2>
             <p className="text-left text-base font-medium tracking-normal leading-[25px] text-black">
@@ -287,18 +287,18 @@ function ProductGrid({
 function Editorial() {
   return (
     <section
-      className="bg-[#DFDAD7] px-6 pt-0 pb-16 md:px-12 md:pt-[17px] md:pb-24 lg:pt-[33px] lg:pb-28"
+      className="bg-[#DFDAD7] px-6 pt-16 pb-16 md:px-12 md:pt-[33px] md:pb-24 lg:pt-[33px] lg:pb-28"
       id="journal"
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <div className="flex flex-col justify-center gap-6">
+        <div className="mx-auto flex max-w-[520px] flex-col justify-center gap-6">
           <p className="text-center text-[16px] uppercase font-medium text-foreground">
             JOURNAL
           </p>
-          <h2 className="text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
+          <h2 className="text-balance text-center text-[28px] font-medium leading-tight tracking-tight text-black md:text-[34px]">
             The Grand Collection
           </h2>
-          <p className="mx-auto max-w-[450px] text-left text-base font-medium tracking-normal leading-[25px] text-black">
+          <p className="text-left text-base font-medium tracking-normal leading-[25px] text-black">
             {LOREM}
           </p>
           <div className="mt-3 flex justify-center">
@@ -322,13 +322,13 @@ function Editorial() {
 
 function Newsletter() {
   return (
-    <section className="px-6 py-16 md:px-12 md:py-24 lg:py-28" id="newsletter">
+    <section className="px-6 py-10 md:px-12 md:py-14 lg:py-16" id="newsletter">
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <div className="flex flex-col gap-5">
-          <h2 className="mx-auto max-w-[340px] text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
+        <div className="mx-auto flex max-w-[520px] flex-col gap-5">
+          <h2 className="mx-auto max-w-[340px] text-balance text-center text-[28px] font-medium leading-tight tracking-tight text-black md:text-[34px]">
             Subscribe to the Jamb Journal
           </h2>
-          <p className="mx-auto max-w-[450px] text-left text-base font-medium tracking-normal leading-[25px] text-black">
+          <p className="text-left text-base font-medium tracking-normal leading-[25px] text-black">
             {LOREM}
           </p>
           <div className="mt-3 flex justify-center">

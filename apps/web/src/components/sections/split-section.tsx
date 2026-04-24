@@ -19,7 +19,7 @@ export function SplitSection({
 
   return (
     <section
-      className="px-6 py-16 md:px-12 md:py-24 lg:py-28"
+      className="px-6 py-10 md:px-12 md:py-14 lg:py-16"
       id={anchorId ?? undefined}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
@@ -45,7 +45,7 @@ export function SplitSection({
         >
           <div className="mx-auto flex max-w-[520px] flex-col gap-5 lg:-ml-5 lg:mx-0">
             {title && (
-              <h2 className="text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
+              <h2 className="text-balance text-center text-[28px] font-medium leading-tight tracking-tight text-black md:text-[34px]">
                 {title}
               </h2>
             )}

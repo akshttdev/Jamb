@@ -87,6 +87,21 @@ export type ProductGridBlock = {
     | "wide";
   columns: 3 | 4 | 5;
   sectionBackground?: "default" | "muted";
+  imageScale?:
+    | "1"
+    | "0.9"
+    | "0.85"
+    | "0.8"
+    | "0.75"
+    | "0.7"
+    | "0.65"
+    | "0.6"
+    | "0.55"
+    | "0.5"
+    | "0.45"
+    | "0.4"
+    | "0.35"
+    | "0.3";
   imageBackground?: "none" | "dark" | "light";
   products?: Array<{
     image: ProductImage;
@@ -781,6 +796,21 @@ export type QueryHomePageDataResult = {
           | "wide";
         columns: 3 | 4 | 5;
         sectionBackground?: "default" | "muted";
+        imageScale?:
+          | "0.3"
+          | "0.35"
+          | "0.4"
+          | "0.45"
+          | "0.5"
+          | "0.55"
+          | "0.6"
+          | "0.65"
+          | "0.7"
+          | "0.75"
+          | "0.8"
+          | "0.85"
+          | "0.9"
+          | "1";
         imageBackground?: "dark" | "light" | "none";
         products: Array<{
           image: {
@@ -954,6 +984,21 @@ export type QuerySlugPageDataResult = {
           | "wide";
         columns: 3 | 4 | 5;
         sectionBackground?: "default" | "muted";
+        imageScale?:
+          | "0.3"
+          | "0.35"
+          | "0.4"
+          | "0.45"
+          | "0.5"
+          | "0.55"
+          | "0.6"
+          | "0.65"
+          | "0.7"
+          | "0.75"
+          | "0.8"
+          | "0.85"
+          | "0.9"
+          | "1";
         imageBackground?: "dark" | "light" | "none";
         products: Array<{
           image: {

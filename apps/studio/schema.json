@@ -448,6 +448,71 @@
           },
           "optional": true
         },
+        "imageScale": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "union",
+            "of": [
+              {
+                "type": "string",
+                "value": "1"
+              },
+              {
+                "type": "string",
+                "value": "0.9"
+              },
+              {
+                "type": "string",
+                "value": "0.85"
+              },
+              {
+                "type": "string",
+                "value": "0.8"
+              },
+              {
+                "type": "string",
+                "value": "0.75"
+              },
+              {
+                "type": "string",
+                "value": "0.7"
+              },
+              {
+                "type": "string",
+                "value": "0.65"
+              },
+              {
+                "type": "string",
+                "value": "0.6"
+              },
+              {
+                "type": "string",
+                "value": "0.55"
+              },
+              {
+                "type": "string",
+                "value": "0.5"
+              },
+              {
+                "type": "string",
+                "value": "0.45"
+              },
+              {
+                "type": "string",
+                "value": "0.4"
+              },
+              {
+                "type": "string",
+                "value": "0.35"
+              },
+              {
+                "type": "string",
+                "value": "0.3"
+              }
+            ]
+          },
+          "optional": true
+        },
         "imageBackground": {
           "type": "objectAttribute",
           "value": {

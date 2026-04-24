@@ -14,18 +14,18 @@ export function NewsletterSection({
 }: NewsletterSectionProps) {
   return (
     <section
-      className="px-6 py-16 md:px-12 md:py-24 lg:py-28"
+      className="px-6 py-10 md:px-12 md:py-14 lg:py-16"
       id={anchorId ?? undefined}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <div className="flex flex-col gap-5">
+        <div className="mx-auto flex max-w-[520px] flex-col gap-5">
             {title && (
-              <h2 className="mx-auto max-w-[340px] text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
+              <h2 className="mx-auto max-w-[340px] text-balance text-center text-[28px] font-medium leading-tight tracking-tight text-black md:text-[34px]">
                 {title}
               </h2>
             )}
             {description && (
-              <p className="mx-auto max-w-[450px] text-left text-base font-medium tracking-normal leading-[25px] text-black">
+              <p className="text-left text-base font-medium tracking-normal leading-[25px] text-black">
                 {description}
               </p>
             )}

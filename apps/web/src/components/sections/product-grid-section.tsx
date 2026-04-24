@@ -42,6 +42,7 @@ export function ProductGridSection({
   columns = 4,
   imageBackground = "none",
   sectionBackground = "default",
+  imageScale,
   anchorId,
 }: ProductGridSectionProps) {
   if (!products || products.length === 0) {
@@ -53,6 +54,8 @@ export function ProductGridSection({
   const backgroundClass = IMAGE_BACKGROUND_CLASS[imageBackground];
   const sectionBgClass =
     sectionBackground === "muted" ? "bg-surface-muted" : "";
+  const scale = imageScale ? Number(imageScale) : 1;
+  const scaleStyle = scale < 1 ? { width: `${scale * 100}%` } : undefined;
 
   return (
     <section
@@ -74,7 +77,8 @@ export function ProductGridSection({
               <div className="group flex h-full flex-col">
                 {product.image && (
                   <div
-                    className={`${aspectClass} ${backgroundClass} relative flex w-full flex-1 items-center justify-center overflow-hidden`}
+                    className={`${aspectClass} ${backgroundClass} relative mx-auto flex w-full flex-1 items-center justify-center overflow-hidden`}
+                    style={scaleStyle}
                   >
                     <SanityImage
                       className="h-auto w-auto max-w-full rounded-none object-contain"

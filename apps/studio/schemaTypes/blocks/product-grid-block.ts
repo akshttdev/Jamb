@@ -79,6 +79,33 @@ export const productGridBlock = defineType({
       initialValue: "default",
     }),
     defineField({
+      name: "imageScale",
+      type: "string",
+      title: "Image Scale",
+      description:
+        "Scales the image box within each column. '100%' fills the column; use smaller values when you want more whitespace around each product.",
+      options: {
+        list: [
+          { title: "100%", value: "1" },
+          { title: "90%", value: "0.9" },
+          { title: "85%", value: "0.85" },
+          { title: "80%", value: "0.8" },
+          { title: "75%", value: "0.75" },
+          { title: "70%", value: "0.7" },
+          { title: "65%", value: "0.65" },
+          { title: "60%", value: "0.6" },
+          { title: "55%", value: "0.55" },
+          { title: "50%", value: "0.5" },
+          { title: "45%", value: "0.45" },
+          { title: "40%", value: "0.4" },
+          { title: "35%", value: "0.35" },
+          { title: "30%", value: "0.3" },
+        ],
+        layout: "dropdown",
+      },
+      initialValue: "1",
+    }),
+    defineField({
       name: "imageBackground",
       type: "string",
       title: "Image Background",
