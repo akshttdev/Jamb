@@ -4,7 +4,6 @@ import Link from "next/link";
 
 import type { PagebuilderType } from "@/types";
 import { SanityImage } from "../elements/sanity-image";
-import { MotionWrapper } from "../ui/motion-wrapper";
 
 type SplitSectionProps = PagebuilderType<"splitBlock">;
 
@@ -24,9 +23,7 @@ export function SplitSection({
       id={anchorId ?? undefined}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <MotionWrapper
-          className={isImageLeft ? "order-1" : "order-1 lg:order-2"}
-        >
+        <div className={isImageLeft ? "order-1" : "order-1 lg:order-2"}>
           {image && (
             <div className="mx-auto aspect-[583/734] w-full max-w-[583px] overflow-hidden">
               <SanityImage
@@ -37,15 +34,14 @@ export function SplitSection({
               />
             </div>
           )}
-        </MotionWrapper>
+        </div>
 
-        <MotionWrapper
+        <div
           className={
             isImageLeft
               ? "order-2 lg:pl-16 xl:pl-24"
               : "order-2 lg:order-1 lg:pl-0 lg:pr-16 xl:pr-24"
           }
-          delay={0.12}
         >
           <div className="mx-auto flex max-w-[520px] flex-col gap-5 lg:-ml-5 lg:mx-0">
             {title && (
@@ -82,7 +78,7 @@ export function SplitSection({
               </div>
             )}
           </div>
-        </MotionWrapper>
+        </div>
       </div>
     </section>
   );

@@ -2,7 +2,6 @@
 
 import type { PagebuilderType } from "@/types";
 import { SanityImage } from "../elements/sanity-image";
-import { MotionWrapper } from "../ui/motion-wrapper";
 
 type NewsletterSectionProps = PagebuilderType<"newsletterBlock">;
 
@@ -19,8 +18,7 @@ export function NewsletterSection({
       id={anchorId ?? undefined}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <MotionWrapper>
-          <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5">
             {title && (
               <h2 className="mx-auto max-w-[340px] text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
                 {title}
@@ -36,21 +34,18 @@ export function NewsletterSection({
                 {buttonText}
               </span>
             </div>
-          </div>
-        </MotionWrapper>
+        </div>
 
-        <MotionWrapper delay={0.15}>
-          {image && (
-            <div className="relative mx-auto aspect-[3/4] w-full max-w-[520px] overflow-hidden">
-              <SanityImage
-                className="h-full w-full rounded-none object-cover"
-                height={900}
-                image={image}
-                width={720}
-              />
-            </div>
-          )}
-        </MotionWrapper>
+        {image && (
+          <div className="relative mx-auto aspect-[3/4] w-full max-w-[520px] overflow-hidden">
+            <SanityImage
+              className="h-full w-full rounded-none object-cover"
+              height={900}
+              image={image}
+              width={720}
+            />
+          </div>
+        )}
       </div>
     </section>
   );

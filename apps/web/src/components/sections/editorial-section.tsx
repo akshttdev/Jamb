@@ -4,7 +4,6 @@ import Link from "next/link";
 
 import type { PagebuilderType } from "@/types";
 import { SanityImage } from "../elements/sanity-image";
-import { MotionWrapper } from "../ui/motion-wrapper";
 
 type EditorialSectionProps = PagebuilderType<"editorialBlock">;
 
@@ -24,7 +23,7 @@ export function EditorialSection({
       id={anchorId ?? undefined}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <MotionWrapper>
+        <div>
           <div className="flex flex-col justify-center gap-5">
             {eyebrow && (
               <p className="text-center text-[0.7rem] uppercase tracking-[0.22em] text-foreground/60">
@@ -59,20 +58,18 @@ export function EditorialSection({
               </div>
             )}
           </div>
-        </MotionWrapper>
+        </div>
 
-        <MotionWrapper delay={0.15}>
-          {image && (
-            <div className="aspect-[4/5] overflow-hidden">
-              <SanityImage
-                className="h-full w-full rounded-none object-cover"
-                height={1000}
-                image={image}
-                width={800}
-              />
-            </div>
-          )}
-        </MotionWrapper>
+        {image && (
+          <div className="aspect-[4/5] overflow-hidden">
+            <SanityImage
+              className="h-full w-full rounded-none object-cover"
+              height={1000}
+              image={image}
+              width={800}
+            />
+          </div>
+        )}
       </div>
     </section>
   );

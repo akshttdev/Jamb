@@ -69,7 +69,7 @@ export function ProductGridSection({
         )}
 
         <div className={`grid items-stretch gap-x-5 gap-y-10 ${columnClass}`}>
-          {products.map((product, index) => {
+          {products.map((product) => {
             const CardInner = (
               <div className="group flex h-full flex-col">
                 {product.image && (
@@ -97,21 +97,18 @@ export function ProductGridSection({
               </div>
             );
 
-            return (
-              <MotionWrapper delay={index * 0.06} key={product._key}>
-                {product.href ? (
-                  <Link
-                    aria-label={product.name}
-                    className="block"
-                    href={product.href}
-                    target={product.openInNewTab ? "_blank" : undefined}
-                  >
-                    {CardInner}
-                  </Link>
-                ) : (
-                  CardInner
-                )}
-              </MotionWrapper>
+            return product.href ? (
+              <Link
+                aria-label={product.name}
+                className="block"
+                href={product.href}
+                key={product._key}
+                target={product.openInNewTab ? "_blank" : undefined}
+              >
+                {CardInner}
+              </Link>
+            ) : (
+              <div key={product._key}>{CardInner}</div>
             );
           })}
         </div>

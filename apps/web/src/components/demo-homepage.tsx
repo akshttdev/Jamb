@@ -120,10 +120,7 @@ function Split({ id, title, description, imgSrc, imgAlt, ctas }: SplitProps) {
   return (
     <section className="px-6 py-16 md:px-12 md:py-24 lg:py-28" id={id}>
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <MotionWrapper
-          className="order-2 lg:order-1 lg:pl-0 lg:pr-16 xl:pr-24"
-          delay={0.12}
-        >
+        <div className="order-2 lg:order-1 lg:pl-0 lg:pr-16 xl:pr-24">
           <div className="mx-auto flex max-w-[520px] flex-col gap-5 lg:-ml-5 lg:mx-0">
             <h2 className="text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
               {title}
@@ -139,9 +136,9 @@ function Split({ id, title, description, imgSrc, imgAlt, ctas }: SplitProps) {
               </div>
             )}
           </div>
-        </MotionWrapper>
+        </div>
 
-        <MotionWrapper className="order-1 lg:order-2">
+        <div className="order-1 lg:order-2">
           <div className="relative mx-auto aspect-[583/734] w-full max-w-[583px] overflow-hidden">
             <Image
               alt={imgAlt}
@@ -151,7 +148,7 @@ function Split({ id, title, description, imgSrc, imgAlt, ctas }: SplitProps) {
               src={imgSrc}
             />
           </div>
-        </MotionWrapper>
+        </div>
       </div>
     </section>
   );
@@ -215,11 +212,10 @@ function ProductGrid({
           {items.map((item, index) => {
             const hasNaturalSize = Boolean(item.width && item.height);
             return (
-              <MotionWrapper
-                delay={index * 0.06}
+              <div
+                className="group flex h-full flex-col items-center text-center"
                 key={`${item.src}-${index}`}
               >
-                <div className="group flex h-full flex-col items-center text-center">
                   <div className="flex w-full flex-1 items-center justify-center">
                     {hasNaturalSize && dark ? (
                       <div
@@ -280,7 +276,6 @@ function ProductGrid({
                     </p>
                   </div>
                 </div>
-              </MotionWrapper>
             );
           })}
         </div>
@@ -296,34 +291,30 @@ function Editorial() {
       id="journal"
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <MotionWrapper>
-          <div className="flex flex-col justify-center gap-6">
-            <p className="text-center text-[16px] uppercase font-medium text-foreground">
-              JOURNAL
-            </p>
-            <h2 className="text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
-              The Grand Collection
-            </h2>
-            <p className="mx-auto max-w-[450px] text-left text-base font-medium tracking-normal leading-[25px] text-black">
-              {LOREM}
-            </p>
-            <div className="mt-3 flex justify-center">
-              <OutlineCta label="Discover more" />
-            </div>
+        <div className="flex flex-col justify-center gap-6">
+          <p className="text-center text-[16px] uppercase font-medium text-foreground">
+            JOURNAL
+          </p>
+          <h2 className="text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
+            The Grand Collection
+          </h2>
+          <p className="mx-auto max-w-[450px] text-left text-base font-medium tracking-normal leading-[25px] text-black">
+            {LOREM}
+          </p>
+          <div className="mt-3 flex justify-center">
+            <OutlineCta label="Discover more" />
           </div>
-        </MotionWrapper>
+        </div>
 
-        <MotionWrapper delay={0.15}>
-          <div className="relative aspect-[4/5] overflow-hidden">
-            <Image
-              alt="Grand collection editorial"
-              className="object-cover"
-              fill
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              src={"/images/furniture-2.png"}
-            />
-          </div>
-        </MotionWrapper>
+        <div className="relative aspect-[4/5] overflow-hidden">
+          <Image
+            alt="Grand collection editorial"
+            className="object-cover"
+            fill
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            src={"/images/furniture-2.png"}
+          />
+        </div>
       </div>
     </section>
   );
@@ -333,31 +324,27 @@ function Newsletter() {
   return (
     <section className="px-6 py-16 md:px-12 md:py-24 lg:py-28" id="newsletter">
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <MotionWrapper>
-          <div className="flex flex-col gap-5">
-            <h2 className="mx-auto max-w-[340px] text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
-              Subscribe to the Jamb Journal
-            </h2>
-            <p className="mx-auto max-w-[450px] text-left text-base font-medium tracking-normal leading-[25px] text-black">
-              {LOREM}
-            </p>
-            <div className="mt-3 flex justify-center">
-              <OutlineCta label="Discover more" />
-            </div>
+        <div className="flex flex-col gap-5">
+          <h2 className="mx-auto max-w-[340px] text-balance text-center text-[34px] font-medium leading-tight tracking-tight text-black">
+            Subscribe to the Jamb Journal
+          </h2>
+          <p className="mx-auto max-w-[450px] text-left text-base font-medium tracking-normal leading-[25px] text-black">
+            {LOREM}
+          </p>
+          <div className="mt-3 flex justify-center">
+            <OutlineCta label="Discover more" />
           </div>
-        </MotionWrapper>
+        </div>
 
-        <MotionWrapper delay={0.15}>
-          <div className="relative mx-auto aspect-[3/4] w-full max-w-[520px] overflow-hidden">
-            <Image
-              alt="Jamb Journal magazine cover"
-              className="object-cover"
-              fill
-              sizes="(min-width: 1024px) 520px, 100vw"
-              src={"/images/furniture-3.png"}
-            />
-          </div>
-        </MotionWrapper>
+        <div className="relative mx-auto aspect-[3/4] w-full max-w-[520px] overflow-hidden">
+          <Image
+            alt="Jamb Journal magazine cover"
+            className="object-cover"
+            fill
+            sizes="(min-width: 1024px) 520px, 100vw"
+            src={"/images/furniture-3.png"}
+          />
+        </div>
       </div>
     </section>
   );
