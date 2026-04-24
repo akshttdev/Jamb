@@ -6,13 +6,11 @@ import { createDataAttribute } from "next-sanity";
 import { useCallback, useMemo } from "react";
 
 import type { PageBuilderBlock, PageBuilderBlockTypes } from "@/types";
-import { CTABlock } from "./sections/cta";
-import { FaqAccordion } from "./sections/faq-accordion";
-import { FeatureCardsWithIcon } from "./sections/feature-cards-with-icon";
-import { HeroBlock } from "./sections/hero";
-import { ImageLinkCards } from "./sections/image-link-cards";
-import { RichTextBlock } from "./sections/rich-text-block";
-import { SubscribeNewsletter } from "./sections/subscribe-newsletter";
+import { EditorialSection } from "./sections/editorial-section";
+import { HeroSection } from "./sections/hero-section";
+import { NewsletterSection } from "./sections/newsletter-section";
+import { ProductGridSection } from "./sections/product-grid-section";
+import { SplitSection } from "./sections/split-section";
 
 export type PageBuilderProps = {
   readonly pageBuilder?: PageBuilderBlock[];
@@ -28,13 +26,11 @@ type SanityDataAttributeConfig = {
 
 // Strongly typed component mapping with proper component signatures
 const BLOCK_COMPONENTS = {
-  cta: CTABlock,
-  faqAccordion: FaqAccordion,
-  hero: HeroBlock,
-  featureCardsIcon: FeatureCardsWithIcon,
-  subscribeNewsletter: SubscribeNewsletter,
-  imageLinkCards: ImageLinkCards,
-  richTextBlock: RichTextBlock,
+  heroBlock: HeroSection,
+  splitBlock: SplitSection,
+  productGridBlock: ProductGridSection,
+  editorialBlock: EditorialSection,
+  newsletterBlock: NewsletterSection,
   // biome-ignore lint/suspicious/noExplicitAny: <any is used to allow for dynamic component rendering>
 } as const satisfies Record<PageBuilderBlockTypes, React.ComponentType<any>>;
 
@@ -65,7 +61,7 @@ function UnknownBlockError({
   return (
     <div
       aria-label={`Unknown block type: ${blockType}`}
-      className="flex items-center justify-center rounded-lg border-2 border-muted-foreground/20 border-dashed bg-muted p-8 text-center text-muted-foreground"
+      className="flex items-center justify-center border-2 border-muted-foreground/20 border-dashed bg-muted p-8 text-center text-muted-foreground"
       key={`${blockType}-${blockKey}`}
       role="alert"
     >
@@ -164,10 +160,7 @@ export function PageBuilder({
   }
 
   return (
-    <main
-      className="mx-auto my-16 flex max-w-7xl flex-col gap-16"
-      data-sanity={containerDataAttribute}
-    >
+    <main data-sanity={containerDataAttribute}>
       {blocks.map(renderBlock)}
     </main>
   );

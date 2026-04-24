@@ -1,7 +1,9 @@
 import { sanityFetch } from "@workspace/sanity/live";
 import { queryHomePageData } from "@workspace/sanity/query";
 
+import { DemoHomepage } from "@/components/demo-homepage";
 import { PageBuilder } from "@/components/pagebuilder";
+import { PreloadIntro } from "@/components/preload-intro";
 import { getSEOMetadata } from "@/lib/seo";
 
 async function fetchHomePageData() {
@@ -13,8 +15,11 @@ async function fetchHomePageData() {
 export async function generateMetadata() {
   const { data: homePageData } = await fetchHomePageData();
   return getSEOMetadata({
-    title: homePageData?.title ?? homePageData?.seoTitle,
-    description: homePageData?.description ?? homePageData?.seoDescription,
+    title: homePageData?.title ?? homePageData?.seoTitle ?? "Jamb",
+    description:
+      homePageData?.description ??
+      homePageData?.seoDescription ??
+      "Luxury homeware — fireplaces, lighting, and furniture.",
     slug: "/",
     contentId: homePageData?._id,
     contentType: homePageData?._type,
@@ -24,11 +29,21 @@ export async function generateMetadata() {
 export default async function Page() {
   const { data: homePageData } = await fetchHomePageData();
 
-  if (!homePageData) {
-    return <div>No home page data</div>;
+  if (!homePageData || !homePageData.pageBuilder?.length) {
+    return (
+      <>
+        <PreloadIntro />
+        <DemoHomepage />
+      </>
+    );
   }
 
-  const { _id, _type, pageBuilder } = homePageData ?? {};
+  const { _id, _type, pageBuilder } = homePageData;
 
-  return <PageBuilder id={_id} pageBuilder={pageBuilder ?? []} type={_type} />;
+  return (
+    <>
+      <PreloadIntro />
+      <PageBuilder id={_id} pageBuilder={pageBuilder ?? []} type={_type} />
+    </>
+  );
 }

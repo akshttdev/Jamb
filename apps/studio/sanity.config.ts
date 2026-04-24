@@ -60,7 +60,6 @@ export default defineConfig({
               "navbar",
               "footer",
               "settings",
-              "blogIndex",
               "assist.instruction.context",
               "media.tag",
             ].includes(template?.templateId)
