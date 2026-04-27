@@ -63,20 +63,35 @@ function unlockScroll() {
   window.dispatchEvent(new CustomEvent("jamb:scroll-unlock"));
 }
 
+async function decodeImg(img: HTMLImageElement): Promise<void> {
+  try {
+    if ("decode" in img) {
+      await img.decode();
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function waitForHeroImage(): Promise<void> {
   return new Promise((resolve) => {
-    const check = () => {
+    const check = async () => {
       const heroImg = document.querySelector<HTMLImageElement>("#hero img");
-      if (heroImg?.complete && heroImg.naturalHeight > 0) {
+      if (!heroImg) {
+        requestAnimationFrame(check);
+        return;
+      }
+      if (heroImg.complete && heroImg.naturalHeight > 0) {
+        await decodeImg(heroImg);
         resolve();
         return;
       }
-      if (heroImg) {
-        heroImg.addEventListener("load", () => resolve(), { once: true });
-        heroImg.addEventListener("error", () => resolve(), { once: true });
-        return;
-      }
-      requestAnimationFrame(check);
+      const onDone = async () => {
+        await decodeImg(heroImg);
+        resolve();
+      };
+      heroImg.addEventListener("load", onDone, { once: true });
+      heroImg.addEventListener("error", () => resolve(), { once: true });
     };
     check();
   });
@@ -166,8 +181,26 @@ export function PreloadIntro({
       setTarget({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
 
+    const decodeOverlayImage = async () => {
+      try {
+        const probe = new window.Image();
+        probe.src = src;
+        if ("decode" in probe) {
+          await probe.decode();
+        } else {
+          await new Promise<void>((resolve) => {
+            probe.onload = () => resolve();
+            probe.onerror = () => resolve();
+          });
+        }
+      } catch {
+        // ignore — proceed anyway
+      }
+    };
+
     const kickoff = async () => {
       await (document.fonts?.ready ?? Promise.resolve());
+      await decodeOverlayImage();
       await waitForHeroImage();
       requestAnimationFrame(() => requestAnimationFrame(measure));
     };
@@ -185,7 +218,7 @@ export function PreloadIntro({
       window.removeEventListener("touchmove", blockScroll);
       window.removeEventListener("keydown", blockKeys);
     };
-  }, []);
+  }, [src]);
 
   useEffect(() => {
     if (!(done || skip)) {
