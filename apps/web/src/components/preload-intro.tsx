@@ -1,30 +1,18 @@
 // ============================================================================
-// PRELOAD INTRO — FLIP animation on first tab visit
+// PRELOAD INTRO — FLIP shrink overlay on first tab visit (desktop only)
 // ============================================================================
-// On first visit in a tab:
-//   1. Covers the screen with the hero image (full viewport)
-//   2. Waits for every above-the-fold resource to finish loading
-//      (window.load + document.fonts.ready) BEFORE measuring the hero.
-//      This is the key to eliminating jitter — without it the hero's final
-//      position is a moving target as images/fonts paint in.
-//   3. Measures the real hero's bounding rect (retries if hero not yet sized).
-//   4. Holds for `hold` ms, then shrinks to the measured rect over `duration` s.
-//   5. Once the animation completes, sets sessionStorage flag + unmounts.
-//
-// The `sessionStorage` key "jamb:intro-played" gates this to once-per-tab.
-// A pre-hydration script in layout.tsx reads the same key to add .intro-skip
-// on <html> before React mounts, so the overlay never flashes on reload.
-//
-// Why FLIP with layout props (top/left/width/height) instead of transforms:
-// transforms leave layout alone → the animated element's final box position
-// can be sub-pixel off from the real hero. Layout-property animation forces
-// the overlay to occupy the hero's exact pixel region at the end.
+// Sequence:
+//   1. SSR + first paint: full-viewport overlay covers page.
+//   2. Wait for window load + fonts.ready + hero <img> decoded.
+//   3. Measure hero rect. Animate top/left/width/height from viewport → rect.
+//      Image inside (object-cover) re-crops with container so end-state aspect
+//      matches hero exactly — no snap when overlay unmounts.
 // ============================================================================
 "use client";
 
 import { motion } from "motion/react";
 import Image from "next/image";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 const PREFETCH_ASSETS = [
   "/images/hero.png",
@@ -40,10 +28,6 @@ const PREFETCH_ASSETS = [
   "/images/story-3.png",
   "/images/story-4.png",
   "/images/journal.png",
-  "/images/navbar/jamb-logo.png",
-  "/images/navbar/icons/icon-1.png",
-  "/images/navbar/icons/icon-2.png",
-  "/images/navbar/icons/icon-3.png",
 ];
 
 function prefetchImages(urls: readonly string[]) {
@@ -54,14 +38,53 @@ function prefetchImages(urls: readonly string[]) {
   }
 }
 
-type Rect = {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-};
+function getScrollbarWidth() {
+  return window.innerWidth - document.documentElement.clientWidth;
+}
 
-type PreloadIntroProps = {
+function lockScroll() {
+  const sbw = getScrollbarWidth();
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
+  if (sbw > 0) {
+    document.body.style.paddingRight = `${sbw}px`;
+  }
+  (window as unknown as { __jambIntroActive?: boolean }).__jambIntroActive =
+    true;
+  window.dispatchEvent(new CustomEvent("jamb:scroll-lock"));
+}
+
+function unlockScroll() {
+  document.documentElement.style.overflow = "";
+  document.body.style.overflow = "";
+  document.body.style.paddingRight = "";
+  (window as unknown as { __jambIntroActive?: boolean }).__jambIntroActive =
+    false;
+  window.dispatchEvent(new CustomEvent("jamb:scroll-unlock"));
+}
+
+function waitForHeroImage(): Promise<void> {
+  return new Promise((resolve) => {
+    const check = () => {
+      const heroImg = document.querySelector<HTMLImageElement>("#hero img");
+      if (heroImg?.complete && heroImg.naturalHeight > 0) {
+        resolve();
+        return;
+      }
+      if (heroImg) {
+        heroImg.addEventListener("load", () => resolve(), { once: true });
+        heroImg.addEventListener("error", () => resolve(), { once: true });
+        return;
+      }
+      requestAnimationFrame(check);
+    };
+    check();
+  });
+}
+
+type Rect = { top: number; left: number; width: number; height: number };
+
+type Props = {
   src?: string;
   alt?: string;
   hold?: number;
@@ -70,30 +93,59 @@ type PreloadIntroProps = {
 
 export function PreloadIntro({
   src = "/images/hero.png",
-  alt = "Jamb hero",
+  alt = "Hero",
   hold = 500,
   duration = 1.6,
-}: PreloadIntroProps) {
+}: Props) {
   const [done, setDone] = useState(false);
-  const [rect, setRect] = useState<Rect | null>(null);
+  const [skip, setSkip] = useState(false);
   const [viewport, setViewport] = useState<{ vw: number; vh: number } | null>(
     null
   );
+  const [target, setTarget] = useState<Rect | null>(null);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
-
     prefetchImages(PREFETCH_ASSETS);
 
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (!isDesktop) {
+      setSkip(true);
+      return;
+    }
     if (sessionStorage.getItem("jamb:intro-played")) {
-      setDone(true);
+      setSkip(true);
       return;
     }
 
-    document.body.style.overflow = "hidden";
-    setViewport({ vw: window.innerWidth, vh: window.innerHeight });
+    lockScroll();
+    setViewport({
+      vw: document.documentElement.clientWidth,
+      vh: document.documentElement.clientHeight,
+    });
+
+    const blockScroll = (event: Event) => event.preventDefault();
+    const blockKeys = (event: KeyboardEvent) => {
+      const blocked = [
+        " ",
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "PageUp",
+        "PageDown",
+        "Home",
+        "End",
+      ];
+      if (blocked.includes(event.key)) {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener("wheel", blockScroll, { passive: false });
+    window.addEventListener("touchmove", blockScroll, { passive: false });
+    window.addEventListener("keydown", blockKeys);
 
     let cancelled = false;
 
@@ -111,14 +163,13 @@ export function PreloadIntro({
         requestAnimationFrame(measure);
         return;
       }
-      setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+      setTarget({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
 
-    const kickoff = () => {
-      const fontsReady = document.fonts?.ready ?? Promise.resolve();
-      fontsReady.then(() => {
-        requestAnimationFrame(() => requestAnimationFrame(measure));
-      });
+    const kickoff = async () => {
+      await (document.fonts?.ready ?? Promise.resolve());
+      await waitForHeroImage();
+      requestAnimationFrame(() => requestAnimationFrame(measure));
     };
 
     if (document.readyState === "complete") {
@@ -130,35 +181,61 @@ export function PreloadIntro({
     return () => {
       cancelled = true;
       window.removeEventListener("load", kickoff);
+      window.removeEventListener("wheel", blockScroll);
+      window.removeEventListener("touchmove", blockScroll);
+      window.removeEventListener("keydown", blockKeys);
     };
   }, []);
 
   useEffect(() => {
-    if (!done) {
+    if (!(done || skip)) {
       return;
     }
-    document.body.style.overflow = "";
-  }, [done]);
+    unlockScroll();
+  }, [done, skip]);
 
-  if (done) {
+  if (done || skip) {
     return null;
   }
 
-  const initialState = viewport
-    ? { top: 0, left: 0, width: viewport.vw, height: viewport.vh }
-    : { top: 0, left: 0, width: "100vw", height: "100vh" };
+  // Pre-viewport-measure render (covers SSR + first paint).
+  // Plain div with `inset-0` covers viewport via top/right/bottom/left = 0,
+  // no explicit width/height conflicts to worry about.
+  if (!viewport) {
+    return (
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[70] overflow-hidden"
+        data-preload-intro
+      >
+        <Image
+          alt={alt}
+          className="object-cover"
+          draggable={false}
+          fill
+          priority
+          sizes="100vw"
+          src={src}
+        />
+      </div>
+    );
+  }
 
-  const targetState = rect
-    ? { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
-    : initialState;
+  const initialState = {
+    top: 0,
+    left: 0,
+    width: viewport.vw,
+    height: viewport.vh,
+  };
 
-  const isShrinking = Boolean(rect && viewport);
+  const targetState = target ?? initialState;
+  const isShrinking = Boolean(target);
 
   return (
     <motion.div
       animate={targetState}
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-[70] overflow-hidden"
+      className="pointer-events-none fixed z-[70] overflow-hidden"
       data-preload-intro
       initial={initialState}
       onAnimationComplete={() => {
@@ -167,12 +244,7 @@ export function PreloadIntro({
           setDone(true);
         }
       }}
-      style={{
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-      }}
+      style={{ willChange: "top, left, width, height" }}
       transition={
         isShrinking
           ? {
@@ -186,6 +258,7 @@ export function PreloadIntro({
       <Image
         alt={alt}
         className="object-cover"
+        draggable={false}
         fill
         priority
         sizes="100vw"

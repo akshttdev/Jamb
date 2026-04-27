@@ -31,6 +31,16 @@ export function LenisProvider() {
     // default wheel feel was what the user asked for after iteration.
     const lenis = new Lenis();
 
+    // If preload intro mounted before Lenis, honour its lock now.
+    if ((window as unknown as { __jambIntroActive?: boolean }).__jambIntroActive) {
+      lenis.stop();
+    }
+
+    const handleLock = () => lenis.stop();
+    const handleUnlock = () => lenis.start();
+    window.addEventListener("jamb:scroll-lock", handleLock);
+    window.addEventListener("jamb:scroll-unlock", handleUnlock);
+
     // Lenis is rAF-driven; we own the loop so we can cancel it on cleanup.
     let frame = 0;
     const raf = (time: number) => {
@@ -93,6 +103,8 @@ export function LenisProvider() {
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener("click", handleAnchorClick);
+      window.removeEventListener("jamb:scroll-lock", handleLock);
+      window.removeEventListener("jamb:scroll-unlock", handleUnlock);
       lenis.destroy();
     };
   }, []);

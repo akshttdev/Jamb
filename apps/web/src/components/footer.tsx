@@ -173,7 +173,7 @@ function JambFooter() {
             </form>
             <label className="mt-3 flex items-center gap-2 text-[14px] text-[#9C9C9D]">
               <input
-                className="h-3.5 w-3.5 appearance-none rounded-full border border-[#9C9C9D] bg-transparent checked:bg-black"
+                className="h-3.5 w-3.5 appearance-none rounded-full border border-[#9C9C9D] bg-transparent bg-clip-content p-[2px] checked:bg-black"
                 type="checkbox"
               />
               <span>I agree to our Privacy Policy</span>

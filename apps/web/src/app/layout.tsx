@@ -132,7 +132,7 @@ export default async function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{if(sessionStorage.getItem('jamb:intro-played'))document.documentElement.classList.add('intro-skip');}catch(e){}",
+              "try{var s=sessionStorage.getItem('jamb:intro-played');var m=!window.matchMedia('(min-width: 1024px)').matches;if(s||m)document.documentElement.classList.add('intro-skip');}catch(e){}",
           }}
         />
         <Providers>
