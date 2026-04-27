@@ -182,17 +182,10 @@ export function PreloadIntro({
     };
 
     const decodeOverlayImage = async () => {
+      const probe = new window.Image();
+      probe.src = src;
       try {
-        const probe = new window.Image();
-        probe.src = src;
-        if ("decode" in probe) {
-          await probe.decode();
-        } else {
-          await new Promise<void>((resolve) => {
-            probe.onload = () => resolve();
-            probe.onerror = () => resolve();
-          });
-        }
+        await probe.decode();
       } catch {
         // ignore — proceed anyway
       }
@@ -231,34 +224,16 @@ export function PreloadIntro({
     return null;
   }
 
-  // Pre-viewport-measure render (covers SSR + first paint).
-  // Plain div with `inset-0` covers viewport via top/right/bottom/left = 0,
-  // no explicit width/height conflicts to worry about.
-  if (!viewport) {
-    return (
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-[70] overflow-hidden"
-        data-preload-intro
-      >
-        <Image
-          alt={alt}
-          className="object-cover"
-          draggable={false}
-          fill
-          priority
-          sizes="100vw"
-          src={src}
-        />
-      </div>
-    );
-  }
-
+  // Single motion.div from first render through animation end.
+  // - Pre-viewport / pre-target: full-viewport via vw/vh OR pixel numbers.
+  // - Image stays mounted throughout, no remount → no re-decode blur.
+  // - Animation kicks in only when `target` is set (transition: duration 0
+  //   for non-shrinking renders so width/height swaps from vw/vh→px snap).
   const initialState = {
     top: 0,
     left: 0,
-    width: viewport.vw,
-    height: viewport.vh,
+    width: viewport ? viewport.vw : "100vw",
+    height: viewport ? viewport.vh : "100vh",
   };
 
   const targetState = target ?? initialState;
