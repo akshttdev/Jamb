@@ -22,6 +22,7 @@ export function HeroSection({ image, anchorLinks }: HeroSectionProps) {
       <div className="relative aspect-square w-full overflow-hidden sm:aspect-[1436/768]">
         <SanityImage
           className="absolute inset-0 h-full w-full rounded-none object-cover"
+          disablePreview
           fetchPriority="high"
           height={1200}
           image={image}

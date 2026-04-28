@@ -15,8 +15,14 @@ const ImageWrapper = <T extends ElementType = "img">(
   props: WrapperProps<T>
 ) => <BaseSanityImage baseUrl={SANITY_BASE_URL} {...props} />;
 
+type ExtraProps = { disablePreview?: boolean };
+
 // Main component
-function SanityImageUnmemorized({ image, ...props }: SanityImageProps) {
+function SanityImageUnmemorized({
+  image,
+  disablePreview,
+  ...props
+}: SanityImageProps & ExtraProps) {
   const processedImageData = processImageData(image);
 
   // Early return for invalid image data
@@ -24,7 +30,14 @@ function SanityImageUnmemorized({ image, ...props }: SanityImageProps) {
     return null;
   }
 
-  return <ImageWrapper {...props} {...processedImageData} />;
+  // Strip the LQIP preview so sanity-image renders a single <img> with
+  // src/srcset directly instead of the LQIP wrapper. Skips the blur preview
+  // entirely — caller is expected to load the real image with priority.
+  const data = disablePreview
+    ? { ...processedImageData, preview: undefined }
+    : processedImageData;
+
+  return <ImageWrapper {...props} {...data} />;
 }
 
 export const SanityImage = memo(SanityImageUnmemorized);
