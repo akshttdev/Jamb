@@ -6,7 +6,6 @@
 //   2. If empty → render a hardcoded <DemoHomepage/> fallback
 //   3. If populated → render <PageBuilder/> which dispatches each block to
 //      its matching React component
-//   4. Always render <PreloadIntro/> (first-visit FLIP animation)
 // ============================================================================
 
 import { sanityFetch } from "@workspace/sanity/live";
@@ -14,7 +13,6 @@ import { queryHomePageData } from "@workspace/sanity/query";
 
 import { DemoHomepage } from "@/components/demo-homepage";
 import { PageBuilder } from "@/components/pagebuilder";
-import { PreloadIntro } from "@/components/preload-intro";
 import { getSEOMetadata } from "@/lib/seo";
 
 // Wrapper so we can call the fetch from both generateMetadata and Page.
@@ -47,12 +45,7 @@ export default async function Page() {
   // Fallback path — no CMS document yet, or pageBuilder is empty.
   // Lets the site render offline during dev and before the reviewer seeds Sanity.
   if (!homePageData || !homePageData.pageBuilder?.length) {
-    return (
-      <>
-        <PreloadIntro />
-        <DemoHomepage />
-      </>
-    );
+    return <DemoHomepage />;
   }
 
   // CMS-driven path. _id + _type are forwarded to PageBuilder so it can attach
@@ -60,9 +53,6 @@ export default async function Page() {
   const { _id, _type, pageBuilder } = homePageData;
 
   return (
-    <>
-      <PreloadIntro />
-      <PageBuilder id={_id} pageBuilder={pageBuilder ?? []} type={_type} />
-    </>
+    <PageBuilder id={_id} pageBuilder={pageBuilder ?? []} type={_type} />
   );
 }
