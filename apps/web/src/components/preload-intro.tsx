@@ -73,10 +73,24 @@ async function decodeImg(img: HTMLImageElement): Promise<void> {
   }
 }
 
+function getHeroRealImg(): HTMLImageElement | null {
+  // sanity-image library renders two <img>: the LQIP (with data-lqip="true",
+  // base64 inline so .complete fires instantly) and the real one (no
+  // data-lqip). Skip the LQIP — wait for the actual high-res image to load.
+  const imgs = document.querySelectorAll<HTMLImageElement>("#hero img");
+  for (const img of imgs) {
+    if (!img.hasAttribute("data-lqip")) {
+      return img;
+    }
+  }
+  // Demo path uses Next/Image directly — only one img, no LQIP.
+  return imgs[0] ?? null;
+}
+
 function waitForHeroImage(): Promise<void> {
   return new Promise((resolve) => {
     const check = async () => {
-      const heroImg = document.querySelector<HTMLImageElement>("#hero img");
+      const heroImg = getHeroRealImg();
       if (!heroImg) {
         requestAnimationFrame(check);
         return;
