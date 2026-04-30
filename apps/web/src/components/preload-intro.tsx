@@ -134,11 +134,68 @@ function isDebugEnabled(): boolean {
   return new URLSearchParams(window.location.search).has("debug-intro");
 }
 
+type DebugHudProps = {
+  debugSteps: DebugStep[];
+  done: boolean;
+  ready: boolean;
+  skip: boolean;
+  target: Rect | null;
+  viewport: { vw: number; vh: number } | null;
+};
+
+function DebugHud({
+  debugSteps,
+  done,
+  ready,
+  skip,
+  target,
+  viewport,
+}: DebugHudProps) {
+  return (
+    <div
+      className="fixed top-2 left-2 z-[100] max-h-[80vh] w-[360px] overflow-y-auto rounded bg-black/85 p-3 font-mono text-[11px] text-white"
+      style={{ pointerEvents: "auto" }}
+    >
+      <div className="mb-2 flex items-center justify-between border-b border-white/30 pb-2 font-bold">
+        <span>preload-intro debug</span>
+        <button
+          className="rounded bg-white/20 px-2 py-0.5 hover:bg-white/30"
+          onClick={() => {
+            sessionStorage.removeItem("jamb:intro-played");
+            window.location.reload();
+          }}
+          type="button"
+        >
+          reset
+        </button>
+      </div>
+      <div className="mb-1">
+        state: skip={String(skip)} done={String(done)} ready={String(ready)}{" "}
+        target={target ? "set" : "null"} viewport=
+        {viewport ? "set" : "null"}
+      </div>
+      <div className="mb-1">
+        target:{" "}
+        {target
+          ? `${target.top.toFixed(0)},${target.left.toFixed(0)} ${target.width.toFixed(0)}×${target.height.toFixed(0)}`
+          : "—"}
+      </div>
+      <div className="mb-2 border-t border-white/20 pt-2">steps:</div>
+      {debugSteps.map((s, i) => (
+        <div className="leading-tight" key={`${i}-${s.label}`}>
+          +{s.t.toFixed(0)}ms {s.label}
+          {s.detail ? ` — ${s.detail}` : ""}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function PreloadIntro({
   src = "/images/hero.png",
   alt = "Hero",
   hold = 0,
-  duration = 0.7,
+  duration = 0.5,
 }: Props) {
   const [done, setDone] = useState(false);
   const [skip, setSkip] = useState(false);
@@ -146,6 +203,11 @@ export function PreloadIntro({
     null
   );
   const [target, setTarget] = useState<Rect | null>(null);
+  // `ready` flips true once fonts + decode + hero-img have settled. Until
+  // then we render a plain splash (solid colour, no image) so the user
+  // doesn't sit looking at a static hero. When ready flips, the image
+  // appears at full viewport and the shrink animation fires immediately.
+  const [ready, setReady] = useState(false);
   const [debugSteps, setDebugSteps] = useState<DebugStep[]>([]);
   // Render-time `debug` MUST match between SSR (false) and first client paint
   // (false). Flip it via post-mount effect so the HUD only mounts after
@@ -285,10 +347,16 @@ export function PreloadIntro({
 
     const kickoff = async () => {
       logStep("kickoff:start");
-      await (document.fonts?.ready ?? Promise.resolve());
-      logStep("fonts:ready");
-      await decodeOverlayImage();
-      await waitForHeroWithTimeout();
+      // Run fonts.ready, overlay decode, and hero img wait in parallel.
+      // Animation can't start before the slowest of these, but they're
+      // independent — no need to serialize.
+      await Promise.all([
+        document.fonts?.ready ?? Promise.resolve(),
+        decodeOverlayImage(),
+        waitForHeroWithTimeout(),
+      ]);
+      logStep("waits:done");
+      setReady(true);
       requestAnimationFrame(() => requestAnimationFrame(measure));
     };
 
@@ -317,11 +385,32 @@ export function PreloadIntro({
     return null;
   }
 
-  // Single motion.div from first render through animation end.
-  // - Pre-viewport / pre-target: full-viewport via vw/vh OR pixel numbers.
-  // - Image stays mounted throughout, no remount → no re-decode blur.
-  // - Animation kicks in only when `target` is set (transition: duration 0
-  //   for non-shrinking renders so width/height swaps from vw/vh→px snap).
+  // Pre-ready phase: solid splash covering viewport, no image.
+  // User sees a clean loading state instead of a static hero image
+  // while we wait on fonts + decode + hero-img.
+  if (!ready) {
+    return (
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[70]"
+        data-preload-intro
+        style={{ background: "#F4EFEC" }}
+      >
+        {debug && (
+          <DebugHud
+            debugSteps={debugSteps}
+            done={done}
+            ready={ready}
+            skip={skip}
+            target={target}
+            viewport={viewport}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Ready phase: image mounts at full viewport + immediately animates to rect.
   const initialState = {
     top: 0,
     left: 0,
@@ -402,41 +491,14 @@ export function PreloadIntro({
         />
       </motion.div>
       {debug && (
-        <div
-          className="fixed top-2 left-2 z-[100] max-h-[80vh] w-[360px] overflow-y-auto rounded bg-black/85 p-3 font-mono text-[11px] text-white"
-          style={{ pointerEvents: "auto" }}
-        >
-          <div className="mb-2 flex items-center justify-between border-b border-white/30 pb-2 font-bold">
-            <span>preload-intro debug</span>
-            <button
-              className="rounded bg-white/20 px-2 py-0.5 hover:bg-white/30"
-              onClick={() => {
-                sessionStorage.removeItem("jamb:intro-played");
-                window.location.reload();
-              }}
-              type="button"
-            >
-              reset
-            </button>
-          </div>
-          <div className="mb-1">
-            state: skip={String(skip)} done={String(done)} target=
-            {target ? "set" : "null"} viewport={viewport ? "set" : "null"}
-          </div>
-          <div className="mb-1">
-            target:{" "}
-            {target
-              ? `${target.top.toFixed(0)},${target.left.toFixed(0)} ${target.width.toFixed(0)}×${target.height.toFixed(0)}`
-              : "—"}
-          </div>
-          <div className="mb-2 border-t border-white/20 pt-2">steps:</div>
-          {debugSteps.map((s, i) => (
-            <div className="leading-tight" key={`${i}-${s.label}`}>
-              +{s.t.toFixed(0)}ms {s.label}
-              {s.detail ? ` — ${s.detail}` : ""}
-            </div>
-          ))}
-        </div>
+        <DebugHud
+          debugSteps={debugSteps}
+          done={done}
+          ready={ready}
+          skip={skip}
+          target={target}
+          viewport={viewport}
+        />
       )}
     </>
   );
