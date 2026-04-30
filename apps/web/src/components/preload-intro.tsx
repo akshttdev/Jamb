@@ -205,10 +205,19 @@ export function PreloadIntro({
       }
     };
 
+    // Wait on hero img with a hard cap. We pre-decode the overlay image
+    // (same URL as hero) so the hero element loads from cache anyway —
+    // there's no value in blocking longer than ~1.5s on hero.complete.
+    const waitForHeroWithTimeout = () =>
+      Promise.race([
+        waitForHeroImage(),
+        new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+      ]);
+
     const kickoff = async () => {
       await (document.fonts?.ready ?? Promise.resolve());
       await decodeOverlayImage();
-      await waitForHeroImage();
+      await waitForHeroWithTimeout();
       requestAnimationFrame(() => requestAnimationFrame(measure));
     };
 
