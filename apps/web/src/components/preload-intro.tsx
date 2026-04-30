@@ -177,9 +177,19 @@ export function PreloadIntro({
     window.addEventListener("keydown", blockKeys);
 
     let cancelled = false;
+    const measureStart = performance.now();
+    const MEASURE_DEADLINE_MS = 3000;
 
     const measure = () => {
       if (cancelled) {
+        return;
+      }
+      // Hard cap: if we can't measure within deadline (no hero element on
+      // page, or hero hasn't laid out), bail out. Marks intro played and
+      // unmounts so the user isn't stuck on a static overlay forever.
+      if (performance.now() - measureStart > MEASURE_DEADLINE_MS) {
+        sessionStorage.setItem("jamb:intro-played", "1");
+        setDone(true);
         return;
       }
       const heroInner = document.querySelector<HTMLElement>("#hero > div");
