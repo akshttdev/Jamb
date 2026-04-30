@@ -385,17 +385,30 @@ export function PreloadIntro({
     return null;
   }
 
-  // Pre-ready phase: solid splash covering viewport, no image.
-  // User sees a clean loading state instead of a static hero image
-  // while we wait on fonts + decode + hero-img.
+  // Pre-ready phase: cream splash with pulsing brand mark — reads as
+  // "loading" rather than a frozen image. When `ready` flips, the hero
+  // image pops in at full viewport and the shrink animation fires.
   if (!ready) {
     return (
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-[70]"
+        className="fixed inset-0 z-[70] flex items-center justify-center"
         data-preload-intro
         style={{ background: "#F4EFEC" }}
       >
+        <motion.div
+          animate={{ opacity: [0.35, 1, 0.35] }}
+          transition={{ duration: 1.6, ease: "easeInOut", repeat: Infinity }}
+        >
+          <Image
+            alt="Jamb"
+            height={32}
+            priority
+            src="/images/navbar/jamb-logo.png"
+            style={{ width: 90, height: "auto" }}
+            width={90}
+          />
+        </motion.div>
         {debug && (
           <DebugHud
             debugSteps={debugSteps}
@@ -418,7 +431,21 @@ export function PreloadIntro({
     height: viewport ? viewport.vh : "100vh",
   };
 
-  const targetState = target ?? initialState;
+  // Combined animate: shrink size to hero rect AND fade opacity to 0 in
+  // the last fraction of the timeline. The fade masks any subpixel/crop
+  // mismatch between the overlay's image and the hero element underneath
+  // at the moment of unmount.
+  const FADE_PORTION = 0.3; // last 30% of the animation is the fade
+  const totalDuration = duration;
+  const targetState = target
+    ? {
+        top: target.top,
+        left: target.left,
+        width: target.width,
+        height: target.height,
+        opacity: [1, 1, 0],
+      }
+    : initialState;
   const isShrinking = Boolean(target);
 
   // biome-ignore lint/suspicious/noExplicitAny: motion update payload
@@ -473,9 +500,15 @@ export function PreloadIntro({
         transition={
           isShrinking
             ? {
-                duration,
+                duration: totalDuration,
                 delay: hold / 1000,
                 ease: [0.77, 0, 0.175, 1],
+                opacity: {
+                  duration: totalDuration,
+                  delay: hold / 1000,
+                  times: [0, 1 - FADE_PORTION, 1],
+                  ease: "easeIn",
+                },
               }
             : { duration: 0 }
         }
