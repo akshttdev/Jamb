@@ -12,7 +12,7 @@
 
 import { motion } from "motion/react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const PREFETCH_ASSETS = [
   "/images/hero.png",
@@ -120,6 +120,20 @@ type Props = {
   duration?: number;
 };
 
+// Debug HUD step type
+type DebugStep = {
+  label: string;
+  t: number;
+  detail?: string;
+};
+
+function isDebugEnabled(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  return new URLSearchParams(window.location.search).has("debug-intro");
+}
+
 export function PreloadIntro({
   src = "/images/hero.png",
   alt = "Hero",
@@ -132,28 +146,45 @@ export function PreloadIntro({
     null
   );
   const [target, setTarget] = useState<Rect | null>(null);
+  const [debugSteps, setDebugSteps] = useState<DebugStep[]>([]);
+  const debug = typeof window !== "undefined" ? isDebugEnabled() : false;
+  const t0Ref = useRef<number>(0);
+  const logStep = (label: string, detail?: string) => {
+    if (!debug) {
+      return;
+    }
+    const t = performance.now() - t0Ref.current;
+    // biome-ignore lint/suspicious/noConsole: debug-only HUD
+    console.log(`[intro] +${t.toFixed(0)}ms ${label}`, detail ?? "");
+    setDebugSteps((prev) => [...prev, { label, t, detail }]);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
+    t0Ref.current = performance.now();
+    logStep("mount", `src=${src}`);
     prefetchImages(PREFETCH_ASSETS);
 
     const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
     if (!isDesktop) {
+      logStep("skip:mobile");
       setSkip(true);
       return;
     }
     if (sessionStorage.getItem("jamb:intro-played")) {
+      logStep("skip:replay");
       setSkip(true);
       return;
     }
 
     lockScroll();
-    setViewport({
-      vw: document.documentElement.clientWidth,
-      vh: document.documentElement.clientHeight,
-    });
+    logStep("scroll-locked");
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
+    setViewport({ vw, vh });
+    logStep("viewport-set", `${vw}×${vh}`);
 
     const blockScroll = (event: Event) => event.preventDefault();
     const blockKeys = (event: KeyboardEvent) => {
@@ -188,6 +219,7 @@ export function PreloadIntro({
       // page, or hero hasn't laid out), bail out. Marks intro played and
       // unmounts so the user isn't stuck on a static overlay forever.
       if (performance.now() - measureStart > MEASURE_DEADLINE_MS) {
+        logStep("measure:deadline-exceeded");
         sessionStorage.setItem("jamb:intro-played", "1");
         setDone(true);
         return;
@@ -202,6 +234,10 @@ export function PreloadIntro({
         requestAnimationFrame(measure);
         return;
       }
+      logStep(
+        "measure:ok",
+        `top=${r.top.toFixed(0)} left=${r.left.toFixed(0)} ${r.width.toFixed(0)}×${r.height.toFixed(0)}`
+      );
       setTarget({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
 
@@ -210,8 +246,9 @@ export function PreloadIntro({
       probe.src = src;
       try {
         await probe.decode();
-      } catch {
-        // ignore — proceed anyway
+        logStep("decode:overlay-ok");
+      } catch (e) {
+        logStep("decode:overlay-fail", String(e));
       }
     };
 
@@ -220,20 +257,29 @@ export function PreloadIntro({
     // there's no value in blocking longer than ~1.5s on hero.complete.
     const waitForHeroWithTimeout = () =>
       Promise.race([
-        waitForHeroImage(),
-        new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+        waitForHeroImage().then(() => logStep("hero-img:loaded")),
+        new Promise<void>((resolve) =>
+          setTimeout(() => {
+            logStep("hero-img:timeout");
+            resolve();
+          }, 1500)
+        ),
       ]);
 
     const kickoff = async () => {
+      logStep("kickoff:start");
       await (document.fonts?.ready ?? Promise.resolve());
+      logStep("fonts:ready");
       await decodeOverlayImage();
       await waitForHeroWithTimeout();
       requestAnimationFrame(() => requestAnimationFrame(measure));
     };
 
     if (document.readyState === "complete") {
+      logStep("readyState:complete");
       kickoff();
     } else {
+      logStep(`readyState:${document.readyState}`);
       window.addEventListener("load", kickoff, { once: true });
     }
 
@@ -273,38 +319,78 @@ export function PreloadIntro({
   const isShrinking = Boolean(target);
 
   return (
-    <motion.div
-      animate={targetState}
-      aria-hidden
-      className="pointer-events-none fixed z-[70] overflow-hidden"
-      data-preload-intro
-      initial={initialState}
-      onAnimationComplete={() => {
-        if (isShrinking) {
-          sessionStorage.setItem("jamb:intro-played", "1");
-          setDone(true);
+    <>
+      <motion.div
+        animate={targetState}
+        aria-hidden
+        className="pointer-events-none fixed z-[70] overflow-hidden"
+        data-preload-intro
+        initial={initialState}
+        onAnimationComplete={() => {
+          logStep("animation:complete");
+          if (isShrinking) {
+            sessionStorage.setItem("jamb:intro-played", "1");
+            setDone(true);
+          }
+        }}
+        style={{ willChange: "top, left, width, height" }}
+        transition={
+          isShrinking
+            ? {
+                duration,
+                delay: hold / 1000,
+                ease: [0.77, 0, 0.175, 1],
+              }
+            : { duration: 0 }
         }
-      }}
-      style={{ willChange: "top, left, width, height" }}
-      transition={
-        isShrinking
-          ? {
-              duration,
-              delay: hold / 1000,
-              ease: [0.77, 0, 0.175, 1],
-            }
-          : { duration: 0 }
-      }
-    >
-      <Image
-        alt={alt}
-        className="object-cover"
-        draggable={false}
-        fill
-        priority
-        sizes="100vw"
-        src={src}
-      />
-    </motion.div>
+      >
+        <Image
+          alt={alt}
+          className="object-cover"
+          draggable={false}
+          fill
+          priority
+          sizes="100vw"
+          src={src}
+        />
+      </motion.div>
+      {debug && (
+        <div
+          className="fixed top-2 left-2 z-[100] max-h-[80vh] w-[360px] overflow-y-auto rounded bg-black/85 p-3 font-mono text-[11px] text-white"
+          style={{ pointerEvents: "auto" }}
+        >
+          <div className="mb-2 flex items-center justify-between border-b border-white/30 pb-2 font-bold">
+            <span>preload-intro debug</span>
+            <button
+              className="rounded bg-white/20 px-2 py-0.5 hover:bg-white/30"
+              onClick={() => {
+                sessionStorage.removeItem("jamb:intro-played");
+                window.location.reload();
+              }}
+              type="button"
+            >
+              reset
+            </button>
+          </div>
+          <div className="mb-1">
+            state: skip={String(skip)} done={String(done)} target=
+            {target ? "set" : "null"} viewport={viewport ? "set" : "null"}
+          </div>
+          <div className="mb-1">
+            target:{" "}
+            {target
+              ? `${target.top.toFixed(0)},${target.left.toFixed(0)} ${target.width.toFixed(0)}×${target.height.toFixed(0)}`
+              : "—"}
+          </div>
+          <div className="mb-2 border-t border-white/20 pt-2">steps:</div>
+          {debugSteps.map((s, i) => (
+            <div className="leading-tight" key={`${i}-${s.label}`}>
+              +{s.t.toFixed(0)}ms {s.label}
+              {s.detail ? ` — ${s.detail}` : ""}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
