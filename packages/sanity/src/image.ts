@@ -1,3 +1,4 @@
+import imageUrlBuilder from "@sanity/image-url";
 import { env } from "@workspace/env/client";
 import type { WrapperProps } from "sanity-image";
 
@@ -107,4 +108,33 @@ export function processImageData(
     ...(hotspot && { hotspot }),
     ...(crop && { crop }),
   };
+}
+
+// Build a direct CDN URL for a Sanity image. Used for server-side preload
+// and to feed PreloadIntro the same src the hero element will render, so
+// the browser cache hits when the overlay unmounts.
+const urlBuilder = imageUrlBuilder({
+  projectId: env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+  dataset: env.NEXT_PUBLIC_SANITY_DATASET,
+});
+
+export function buildImageUrl(
+  image: SanityImageData,
+  options: { width?: number; height?: number } = {}
+): string | null {
+  const data = processImageData(image);
+  if (!data) {
+    return null;
+  }
+  let builder = urlBuilder.image(data.id);
+  if (options.width) {
+    builder = builder.width(options.width);
+  }
+  if (options.height) {
+    builder = builder.height(options.height);
+  }
+  if (data.crop) {
+    builder = builder.crop("focalpoint");
+  }
+  return builder.url();
 }

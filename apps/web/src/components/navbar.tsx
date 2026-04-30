@@ -76,7 +76,9 @@ export function Navbar({
               <Image
                 alt={icon.alt}
                 className="object-contain"
+                fetchPriority="high"
                 height={icon.height}
+                priority
                 src={icon.src}
                 style={{ width: icon.width, height: icon.height }}
                 width={icon.width}
