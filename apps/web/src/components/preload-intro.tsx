@@ -482,12 +482,19 @@ export function PreloadIntro({
 
   return (
     <>
-      {/* Cream backdrop — always covers viewport while overlay is alive. */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-[69]"
-        style={{ background: "#F4EFEC" }}
-      />
+      {/* Cream backdrop — covers the viewport during splash + image-hold
+          phases. Unmounts the moment shrink begins (target set) so the
+          areas revealed around the shrinking image show the actual page
+          (navbar, hero element, anchor links) instead of cream. The
+          unmount is invisible because the image covers full viewport at
+          that exact moment. */}
+      {!target && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-[69]"
+          style={{ background: "#F4EFEC" }}
+        />
+      )}
 
       {/* Splash logo — fades out when ready flips true. */}
       <AnimatePresence>
