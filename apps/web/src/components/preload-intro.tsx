@@ -195,7 +195,7 @@ export function PreloadIntro({
   src = "/images/hero.png",
   alt = "Hero",
   hold = 0,
-  duration = 0.5,
+  duration = 1.2,
 }: Props) {
   const [done, setDone] = useState(false);
   const [skip, setSkip] = useState(false);
@@ -345,14 +345,32 @@ export function PreloadIntro({
         });
       });
 
+    // Each wait gets its own timeout so a single hang doesn't block the
+    // whole kickoff. fonts.ready can stall indefinitely in Safari when a
+    // font is still loading.
+    const withTimeout = <T,>(p: Promise<T>, ms: number, label: string) =>
+      Promise.race<unknown>([
+        p.then((v) => {
+          logStep(`${label}:resolved`);
+          return v;
+        }),
+        new Promise((resolve) =>
+          setTimeout(() => {
+            logStep(`${label}:timeout`);
+            resolve(undefined);
+          }, ms)
+        ),
+      ]);
+
     const kickoff = async () => {
       logStep("kickoff:start");
-      // Run fonts.ready, overlay decode, and hero img wait in parallel.
-      // Animation can't start before the slowest of these, but they're
-      // independent — no need to serialize.
       await Promise.all([
-        document.fonts?.ready ?? Promise.resolve(),
-        decodeOverlayImage(),
+        withTimeout(
+          document.fonts?.ready ?? Promise.resolve(),
+          1000,
+          "fonts"
+        ),
+        withTimeout(decodeOverlayImage(), 1000, "decode"),
         waitForHeroWithTimeout(),
       ]);
       logStep("waits:done");
@@ -502,12 +520,14 @@ export function PreloadIntro({
             ? {
                 duration: totalDuration,
                 delay: hold / 1000,
-                ease: [0.77, 0, 0.175, 1],
+                // Softer cubic-bezier — less acceleration peak, more
+                // gradual settle than the previous [0.77, 0, 0.175, 1].
+                ease: [0.32, 0.72, 0, 1],
                 opacity: {
                   duration: totalDuration,
                   delay: hold / 1000,
                   times: [0, 1 - FADE_PORTION, 1],
-                  ease: "easeIn",
+                  ease: "easeInOut",
                 },
               }
             : { duration: 0 }
