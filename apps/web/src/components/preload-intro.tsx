@@ -194,11 +194,11 @@ function DebugHud({
 export function PreloadIntro({
   src = "/images/hero.png",
   alt = "Hero",
-  // hold (ms): keep image at full viewport this long after `ready` so the
-  // hero element behind has time to fully paint at high-res before the
-  // shrink begins. Removes any brief blur/swap at animation end.
-  hold = 600,
-  duration = 1.5,
+  // hold (ms): legacy delay before animation begins. Kept for prop API
+  // compatibility; fade-in/fade-out are now part of the main timeline so
+  // there's no separate hold phase.
+  hold = 0,
+  duration = 1.6,
 }: Props) {
   const [done, setDone] = useState(false);
   const [skip, setSkip] = useState(false);
@@ -378,6 +378,43 @@ export function PreloadIntro({
     const MIN_SPLASH_MS = 900;
     const kickoffStartedAt = performance.now();
 
+    // Synchronous measure helper for kickoff. Returns a Promise that
+    // resolves with the hero rect once it's measurable. Used so we can
+    // setTarget and setReady together — image mounts with target already
+    // known, no separate hold phase needed.
+    const measureAsync = (): Promise<Rect | null> =>
+      new Promise((resolve) => {
+        const tryMeasure = () => {
+          if (cancelled) {
+            return resolve(null);
+          }
+          const heroInner =
+            document.querySelector<HTMLElement>("#hero > div");
+          if (!heroInner) {
+            requestAnimationFrame(tryMeasure);
+            return;
+          }
+          const r = heroInner.getBoundingClientRect();
+          if (r.height < 50) {
+            requestAnimationFrame(tryMeasure);
+            return;
+          }
+          resolve({
+            top: Math.round(r.top),
+            left: Math.round(r.left),
+            width: Math.round(r.width),
+            height: Math.round(r.height),
+          });
+        };
+        // Hard cap so kickoff doesn't hang on a missing #hero.
+        const cap = setTimeout(() => resolve(null), 2500);
+        const wrapped = () => {
+          clearTimeout(cap);
+          tryMeasure();
+        };
+        wrapped();
+      });
+
     const kickoff = async () => {
       logStep("kickoff:start");
       await Promise.all([
@@ -397,9 +434,21 @@ export function PreloadIntro({
         logStep(`splash:pad-${padMs.toFixed(0)}ms`);
         await new Promise((resolve) => setTimeout(resolve, padMs));
       }
+      // Measure hero rect BEFORE flipping ready, so image mounts with
+      // target already set → fade-in + shrink + fade-out animate as one
+      // continuous timeline (no separate hold/shrink phases).
+      const rect = await measureAsync();
+      if (rect) {
+        logStep(
+          "measure:ok",
+          `top=${rect.top} left=${rect.left} ${rect.width}×${rect.height}`
+        );
+        setTarget(rect);
+      } else {
+        logStep("measure:failed");
+      }
       logStep("ready:flip");
       setReady(true);
-      requestAnimationFrame(() => requestAnimationFrame(measure));
     };
 
     // Don't wait for window.load — that fires after ALL resources finish,
@@ -445,9 +494,16 @@ export function PreloadIntro({
     opacity: 0,
   };
 
-  // Last 30% of the shrink is the fade-out so the overlay dissolves into
-  // the hero element underneath instead of unmounting hard.
-  const FADE_PORTION = 0.3;
+  // Single-timeline animation: fade-in → hold-opacity → fade-out, while
+  // layout shrinks throughout. Opacity keyframes carve up the same
+  // duration into 3 portions so the image entrance and the shrink happen
+  // simultaneously (rather than fade-in → wait → shrink).
+  //
+  // - 0%  → 15%: opacity 0 → 1 (fade in)
+  // - 15% → 70%: opacity stays 1 (image visible during shrink)
+  // - 70% → 100%: opacity 1 → 0 (fade out into hero element behind)
+  const FADE_IN_PORTION = 0.15;
+  const FADE_OUT_PORTION = 0.3;
   const totalDuration = duration;
   const targetState = target
     ? {
@@ -455,9 +511,9 @@ export function PreloadIntro({
         left: target.left,
         width: target.width,
         height: target.height,
-        opacity: [1, 1, 0],
+        opacity: [0, 1, 1, 0],
       }
-    : { ...initialState, opacity: 1 }; // post-ready, pre-target = fade-in
+    : { ...initialState, opacity: 1 }; // safety fallback if target null
   const isShrinking = Boolean(target);
 
   // biome-ignore lint/suspicious/noExplicitAny: motion update payload
@@ -566,15 +622,17 @@ export function PreloadIntro({
                   opacity: {
                     duration: totalDuration,
                     delay: hold / 1000,
-                    times: [0, 1 - FADE_PORTION, 1],
+                    // 4 keyframes: 0% → fade-in% → fade-out-start% → 100%
+                    times: [
+                      0,
+                      FADE_IN_PORTION,
+                      1 - FADE_OUT_PORTION,
+                      1,
+                    ],
                     ease: "easeInOut",
                   },
                 }
-              : {
-                  // Pre-shrink: fade-in only. Layout stays at full viewport.
-                  duration: 0.5,
-                  ease: "easeOut",
-                }
+              : { duration: 0.5, ease: "easeOut" }
           }
         >
           <Image
