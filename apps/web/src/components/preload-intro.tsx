@@ -332,6 +332,26 @@ export function PreloadIntro({
   const targetState = target ?? initialState;
   const isShrinking = Boolean(target);
 
+  // biome-ignore lint/suspicious/noExplicitAny: motion update payload
+  const handleUpdate = (latest: any) => {
+    if (!isDebugEnabled()) {
+      return;
+    }
+    if (!latest || typeof latest.width !== "number") {
+      return;
+    }
+    // Sample every 100ms-ish — Math.floor on width gives natural throttling
+    // by skipping consecutive identical-width frames (motion eases width
+    // such that adjacent frames sometimes share floor).
+    const w = Math.floor(latest.width);
+    const tag = `update:w=${w}`;
+    if ((handleUpdate as unknown as { last?: number }).last === w) {
+      return;
+    }
+    (handleUpdate as unknown as { last?: number }).last = w;
+    logStep(tag);
+  };
+
   return (
     <>
       <motion.div
@@ -340,13 +360,26 @@ export function PreloadIntro({
         className="pointer-events-none fixed z-[70] overflow-hidden"
         data-preload-intro
         initial={initialState}
-        onAnimationComplete={() => {
+        onAnimationComplete={(definition) => {
+          // biome-ignore lint/suspicious/noConsole: debug
+          if (isDebugEnabled()) {
+            // biome-ignore lint/suspicious/noConsole: debug
+            console.log("[intro] onAnimationComplete payload:", definition);
+          }
           logStep("animation:complete");
           if (isShrinking) {
             sessionStorage.setItem("jamb:intro-played", "1");
             setDone(true);
           }
         }}
+        onAnimationStart={(definition) => {
+          if (isDebugEnabled()) {
+            // biome-ignore lint/suspicious/noConsole: debug
+            console.log("[intro] onAnimationStart payload:", definition);
+          }
+          logStep(`animation:start (shrinking=${isShrinking})`);
+        }}
+        onUpdate={handleUpdate}
         style={{ willChange: "top, left, width, height" }}
         transition={
           isShrinking
