@@ -147,7 +147,15 @@ export function PreloadIntro({
   );
   const [target, setTarget] = useState<Rect | null>(null);
   const [debugSteps, setDebugSteps] = useState<DebugStep[]>([]);
-  const debug = typeof window !== "undefined" ? isDebugEnabled() : false;
+  // Render-time `debug` MUST match between SSR (false) and first client paint
+  // (false). Flip it via post-mount effect so the HUD only mounts after
+  // hydration is complete — no mismatch.
+  const [debug, setDebug] = useState(false);
+  useEffect(() => {
+    if (isDebugEnabled()) {
+      setDebug(true);
+    }
+  }, []);
   const t0Ref = useRef<number>(0);
   const logStep = (label: string, detail?: string) => {
     if (!debug) {
@@ -256,15 +264,22 @@ export function PreloadIntro({
     // (same URL as hero) so the hero element loads from cache anyway —
     // there's no value in blocking longer than ~1.5s on hero.complete.
     const waitForHeroWithTimeout = () =>
-      Promise.race([
-        waitForHeroImage().then(() => logStep("hero-img:loaded")),
-        new Promise<void>((resolve) =>
-          setTimeout(() => {
-            logStep("hero-img:timeout");
-            resolve();
-          }, 1500)
-        ),
-      ]);
+      new Promise<void>((resolve) => {
+        let settled = false;
+        const finish = (label: string) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          logStep(label);
+          resolve();
+        };
+        const timer = setTimeout(() => finish("hero-img:timeout"), 1500);
+        waitForHeroImage().then(() => {
+          clearTimeout(timer);
+          finish("hero-img:loaded");
+        });
+      });
 
     const kickoff = async () => {
       logStep("kickoff:start");
