@@ -137,8 +137,8 @@ function isDebugEnabled(): boolean {
 export function PreloadIntro({
   src = "/images/hero.png",
   alt = "Hero",
-  hold = 150,
-  duration = 1,
+  hold = 0,
+  duration = 0.7,
 }: Props) {
   const [done, setDone] = useState(false);
   const [skip, setSkip] = useState(false);
