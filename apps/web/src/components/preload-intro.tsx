@@ -137,8 +137,8 @@ function isDebugEnabled(): boolean {
 export function PreloadIntro({
   src = "/images/hero.png",
   alt = "Hero",
-  hold = 500,
-  duration = 1.6,
+  hold = 150,
+  duration = 1,
 }: Props) {
   const [done, setDone] = useState(false);
   const [skip, setSkip] = useState(false);
@@ -157,8 +157,10 @@ export function PreloadIntro({
     }
   }, []);
   const t0Ref = useRef<number>(0);
+  // logStep reads URL directly so logs always fire when ?debug-intro=1 is
+  // set, even though `debug` state flips after the main useEffect runs.
   const logStep = (label: string, detail?: string) => {
-    if (!debug) {
+    if (!isDebugEnabled()) {
       return;
     }
     const t = performance.now() - t0Ref.current;
@@ -290,17 +292,14 @@ export function PreloadIntro({
       requestAnimationFrame(() => requestAnimationFrame(measure));
     };
 
-    if (document.readyState === "complete") {
-      logStep("readyState:complete");
-      kickoff();
-    } else {
-      logStep(`readyState:${document.readyState}`);
-      window.addEventListener("load", kickoff, { once: true });
-    }
+    // Don't wait for window.load — that fires after ALL resources finish,
+    // including all prefetched images. fonts.ready + image decode inside
+    // kickoff is enough. Start immediately.
+    logStep(`readyState:${document.readyState}`);
+    kickoff();
 
     return () => {
       cancelled = true;
-      window.removeEventListener("load", kickoff);
       window.removeEventListener("wheel", blockScroll);
       window.removeEventListener("touchmove", blockScroll);
       window.removeEventListener("keydown", blockKeys);
