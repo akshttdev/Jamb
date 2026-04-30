@@ -194,8 +194,11 @@ function DebugHud({
 export function PreloadIntro({
   src = "/images/hero.png",
   alt = "Hero",
-  hold = 0,
-  duration = 1.2,
+  // hold (ms): keep image at full viewport this long after `ready` so the
+  // hero element behind has time to fully paint at high-res before the
+  // shrink begins. Removes any brief blur/swap at animation end.
+  hold = 600,
+  duration = 1.5,
 }: Props) {
   const [done, setDone] = useState(false);
   const [skip, setSkip] = useState(false);
@@ -310,7 +313,14 @@ export function PreloadIntro({
         "measure:ok",
         `top=${r.top.toFixed(0)} left=${r.left.toFixed(0)} ${r.width.toFixed(0)}×${r.height.toFixed(0)}`
       );
-      setTarget({ top: r.top, left: r.left, width: r.width, height: r.height });
+      // Round to integers so animation end-state lands on a pixel exactly
+      // matching the hero element's CSS box. Prevents 1px subpixel snap.
+      setTarget({
+        top: Math.round(r.top),
+        left: Math.round(r.left),
+        width: Math.round(r.width),
+        height: Math.round(r.height),
+      });
     };
 
     const decodeOverlayImage = async () => {
