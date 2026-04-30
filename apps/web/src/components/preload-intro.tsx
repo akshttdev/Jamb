@@ -10,7 +10,7 @@
 // ============================================================================
 "use client";
 
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
@@ -372,6 +372,12 @@ export function PreloadIntro({
         ),
       ]);
 
+    // Minimum splash time. Even if all waits resolve in 50ms, hold the
+    // logo splash this long so the choreography reads as deliberate
+    // (logo → image → shrink) instead of flashing through.
+    const MIN_SPLASH_MS = 900;
+    const kickoffStartedAt = performance.now();
+
     const kickoff = async () => {
       logStep("kickoff:start");
       await Promise.all([
@@ -384,6 +390,14 @@ export function PreloadIntro({
         waitForHeroWithTimeout(),
       ]);
       logStep("waits:done");
+      // Pad to MIN_SPLASH_MS if we resolved early.
+      const elapsed = performance.now() - kickoffStartedAt;
+      if (elapsed < MIN_SPLASH_MS) {
+        const padMs = MIN_SPLASH_MS - elapsed;
+        logStep(`splash:pad-${padMs.toFixed(0)}ms`);
+        await new Promise((resolve) => setTimeout(resolve, padMs));
+      }
+      logStep("ready:flip");
       setReady(true);
       requestAnimationFrame(() => requestAnimationFrame(measure));
     };
@@ -413,57 +427,27 @@ export function PreloadIntro({
     return null;
   }
 
-  // Pre-ready phase: cream splash with pulsing brand mark — reads as
-  // "loading" rather than a frozen image. When `ready` flips, the hero
-  // image pops in at full viewport and the shrink animation fires.
-  if (!ready) {
-    return (
-      <div
-        aria-hidden
-        className="fixed inset-0 z-[70] flex items-center justify-center"
-        data-preload-intro
-        style={{ background: "#F4EFEC" }}
-      >
-        <motion.div
-          animate={{ opacity: [0.35, 1, 0.35] }}
-          transition={{ duration: 1.6, ease: "easeInOut", repeat: Infinity }}
-        >
-          <Image
-            alt="Jamb"
-            height={32}
-            priority
-            src="/images/navbar/jamb-logo.png"
-            style={{ width: 90, height: "auto" }}
-            width={90}
-          />
-        </motion.div>
-        {debug && (
-          <DebugHud
-            debugSteps={debugSteps}
-            done={done}
-            ready={ready}
-            skip={skip}
-            target={target}
-            viewport={viewport}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // Ready phase: image mounts at full viewport + immediately animates to rect.
+  // Render-tree always renders both layers once we're past skip/done:
+  //   1. Cream backdrop (z-69): solid colour, always covers viewport.
+  //      Provides the "site is loading" canvas plus the bg the splash
+  //      logo + crossfade work over.
+  //   2. Splash logo (z-71): pulsing Jamb mark, mounted while !ready,
+  //      AnimatePresence fades it out when ready flips.
+  //   3. Hero image (z-70, post-ready): mounts with opacity 0, fades in,
+  //      holds at full viewport, then shrinks to hero rect.
+  // Crossfade between splash and hero happens because they share
+  // overlapping transitions (splash exit + image entrance).
   const initialState = {
     top: 0,
     left: 0,
     width: viewport ? viewport.vw : "100vw",
     height: viewport ? viewport.vh : "100vh",
+    opacity: 0,
   };
 
-  // Combined animate: shrink size to hero rect AND fade opacity to 0 in
-  // the last fraction of the timeline. The fade masks any subpixel/crop
-  // mismatch between the overlay's image and the hero element underneath
-  // at the moment of unmount.
-  const FADE_PORTION = 0.3; // last 30% of the animation is the fade
+  // Last 30% of the shrink is the fade-out so the overlay dissolves into
+  // the hero element underneath instead of unmounting hard.
+  const FADE_PORTION = 0.3;
   const totalDuration = duration;
   const targetState = target
     ? {
@@ -473,7 +457,7 @@ export function PreloadIntro({
         height: target.height,
         opacity: [1, 1, 0],
       }
-    : initialState;
+    : { ...initialState, opacity: 1 }; // post-ready, pre-target = fade-in
   const isShrinking = Boolean(target);
 
   // biome-ignore lint/suspicious/noExplicitAny: motion update payload
@@ -498,61 +482,106 @@ export function PreloadIntro({
 
   return (
     <>
-      <motion.div
-        animate={targetState}
+      {/* Cream backdrop — always covers viewport while overlay is alive. */}
+      <div
         aria-hidden
-        className="pointer-events-none fixed z-[70] overflow-hidden"
-        data-preload-intro
-        initial={initialState}
-        onAnimationComplete={(definition) => {
-          // biome-ignore lint/suspicious/noConsole: debug
-          if (isDebugEnabled()) {
-            // biome-ignore lint/suspicious/noConsole: debug
-            console.log("[intro] onAnimationComplete payload:", definition);
-          }
-          logStep("animation:complete");
-          if (isShrinking) {
-            sessionStorage.setItem("jamb:intro-played", "1");
-            setDone(true);
-          }
-        }}
-        onAnimationStart={(definition) => {
-          if (isDebugEnabled()) {
-            // biome-ignore lint/suspicious/noConsole: debug
-            console.log("[intro] onAnimationStart payload:", definition);
-          }
-          logStep(`animation:start (shrinking=${isShrinking})`);
-        }}
-        onUpdate={handleUpdate}
-        style={{ willChange: "top, left, width, height" }}
-        transition={
-          isShrinking
-            ? {
-                duration: totalDuration,
-                delay: hold / 1000,
-                // Softer cubic-bezier — less acceleration peak, more
-                // gradual settle than the previous [0.77, 0, 0.175, 1].
-                ease: [0.32, 0.72, 0, 1],
-                opacity: {
+        className="pointer-events-none fixed inset-0 z-[69]"
+        style={{ background: "#F4EFEC" }}
+      />
+
+      {/* Splash logo — fades out when ready flips true. */}
+      <AnimatePresence>
+        {!ready && (
+          <motion.div
+            animate={{ opacity: 1 }}
+            aria-hidden
+            className="pointer-events-none fixed inset-0 z-[71] flex items-center justify-center"
+            exit={{ opacity: 0 }}
+            initial={{ opacity: 1 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+          >
+            <motion.div
+              animate={{ opacity: [0.35, 1, 0.35] }}
+              transition={{
+                duration: 1.6,
+                ease: "easeInOut",
+                repeat: Infinity,
+              }}
+            >
+              <Image
+                alt="Jamb"
+                height={32}
+                priority
+                src="/images/navbar/jamb-logo.png"
+                style={{ width: 90, height: "auto" }}
+                width={90}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Hero image — mounts with opacity 0, fades in, holds at full
+          viewport (per `hold`), then shrinks to hero rect with fade-out. */}
+      {ready && (
+        <motion.div
+          animate={targetState}
+          aria-hidden
+          className="pointer-events-none fixed z-[70] overflow-hidden"
+          data-preload-intro
+          initial={initialState}
+          onAnimationComplete={(definition) => {
+            if (isDebugEnabled()) {
+              // biome-ignore lint/suspicious/noConsole: debug
+              console.log("[intro] onAnimationComplete payload:", definition);
+            }
+            logStep("animation:complete");
+            if (isShrinking) {
+              sessionStorage.setItem("jamb:intro-played", "1");
+              setDone(true);
+            }
+          }}
+          onAnimationStart={(definition) => {
+            if (isDebugEnabled()) {
+              // biome-ignore lint/suspicious/noConsole: debug
+              console.log("[intro] onAnimationStart payload:", definition);
+            }
+            logStep(`animation:start (shrinking=${isShrinking})`);
+          }}
+          onUpdate={handleUpdate}
+          style={{ willChange: "top, left, width, height, opacity" }}
+          transition={
+            isShrinking
+              ? {
                   duration: totalDuration,
                   delay: hold / 1000,
-                  times: [0, 1 - FADE_PORTION, 1],
-                  ease: "easeInOut",
-                },
-              }
-            : { duration: 0 }
-        }
-      >
-        <Image
-          alt={alt}
-          className="object-cover"
-          draggable={false}
-          fill
-          priority
-          sizes="100vw"
-          src={src}
-        />
-      </motion.div>
+                  ease: [0.32, 0.72, 0, 1],
+                  opacity: {
+                    duration: totalDuration,
+                    delay: hold / 1000,
+                    times: [0, 1 - FADE_PORTION, 1],
+                    ease: "easeInOut",
+                  },
+                }
+              : {
+                  // Pre-shrink: fade-in only. Layout stays at full viewport.
+                  duration: 0.5,
+                  ease: "easeOut",
+                }
+          }
+        >
+          <Image
+            alt={alt}
+            className="object-cover"
+            draggable={false}
+            fill
+            priority
+            sizes="100vw"
+            src={src}
+          />
+        </motion.div>
+      )}
+
       {debug && (
         <DebugHud
           debugSteps={debugSteps}
