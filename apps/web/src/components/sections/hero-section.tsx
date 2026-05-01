@@ -3,12 +3,16 @@
 // ============================================================================
 // Top of the page: full-bleed image + optional anchor nav.
 // - aspect-[4/3] on mobile (matches landscape hero image), aspect-[1436/768] on desktop
-// - fetchPriority="high" + loading="eager" so it's the LCP element
+// - Uses Next/Image with the same URL the PreloadIntro overlay loads, so
+//   the browser caches one resource shared between overlay + hero —
+//   eliminates pixel mismatch when the overlay unmounts.
 // - Anchor links use <a> (not <Link>) so Lenis can hijack and animate the scroll
 // ============================================================================
 
+import { buildImageUrl } from "@workspace/sanity/image";
+import Image from "next/image";
+
 import type { PagebuilderType } from "@/types";
-import { SanityImage } from "../elements/sanity-image";
 
 type HeroSectionProps = PagebuilderType<"heroBlock">;
 
@@ -17,17 +21,23 @@ export function HeroSection({ image, anchorLinks }: HeroSectionProps) {
     return null;
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: query result image shape varies
+  const heroUrl = buildImageUrl(image as any, { width: 2400, height: 1200 });
+  if (!heroUrl) {
+    return null;
+  }
+
   return (
     <section className="w-full px-[38px]" id="hero">
       <div className="relative aspect-square w-full overflow-hidden sm:aspect-[1436/768]">
-        <SanityImage
-          className="absolute inset-0 h-full w-full rounded-none object-cover"
-          disablePreview
+        <Image
+          alt="Hero"
+          className="object-cover"
           fetchPriority="high"
-          height={1200}
-          image={image}
-          loading="eager"
-          width={2400}
+          fill
+          priority
+          sizes="100vw"
+          src={heroUrl}
         />
       </div>
       {anchorLinks && anchorLinks.length > 0 && (
